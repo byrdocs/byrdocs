@@ -329,7 +329,7 @@ export default function Login() {
     const [studentId, setStudentId] = useState('')
     const [password, setPassword] = useState('')
     const [searchParams] = useSearchParams()
-    const navigate = useNavigate()
+    const navigate = (path: string) => location.href = path
 
     const to = searchParams.get('to')
 
@@ -399,7 +399,7 @@ export default function Login() {
             }
 
             if (data.success) {
-                location.href = to || "/"
+                navigate(to || "/")
                 return
             }
         } catch (error) {
