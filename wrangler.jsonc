@@ -1,6 +1,6 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "byrdocs",
+    "name": "byrdocs-edge",
     "main": "worker/index.ts",
     "compatibility_date": "2025-08-31",
     "durable_objects": {
