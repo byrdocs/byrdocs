@@ -295,13 +295,14 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                                 <div
                                                     className="p-4 w-full rounded-lg border border-gray-400 dark:border-gray-900 text-gray-600 dark:text-gray-500 hover:dark:border-gray-800 shadow-xs hover:shadow-md transition-all cursor-pointer group"
                                                     onClick={(e) => {
-                                                        if ((e.target as HTMLElement).tagName === "A") return
+                                                        console.log(e)
+                                                        if ((e.target as HTMLElement).tagName === "A" && !(e.target as HTMLElement).classList.contains("title-link")) return
                                                         window.open(announcement.url)
                                                     }}
                                                     key={announcement.id}
                                                 >
                                                     <h2 className="mb-1 group-hover:underline underline-offset-4 decoration-1 text-base font-bold tracking-tight text-[color:var(--vp-c-brand-light)] dark:text-[color:var(--vp-c-brand-dark)]">
-                                                        <a>{announcement.title}</a>
+                                                        <a className="title-link">{announcement.title}</a>
                                                     </h2>
                                                     <p className="font-light text-sm [&_a]:text-primary/80 hover:[&_a]:underline"
                                                         dangerouslySetInnerHTML={{
@@ -335,7 +336,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                         </TabList>
                                     </div>
                                     <div className="items-end hidden md:block py-1">
-                                        <button 
+                                        <button
                                             className={cn(
                                                 "h-full px-1 text-xs hover:bg-muted/60 active:bg-muted/40 transition-colors rounded-md",
                                                 {
