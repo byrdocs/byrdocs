@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { PrismaClient } from '@prisma/client'
-import { PrismaD1 } from '@prisma/adapter-d1'
+import { drizzle } from 'drizzle-orm/d1'
+import { eq, gte, ne, and, inArray, desc, notInArray } from 'drizzle-orm'
+import { file as fileTable } from '../schema'
 import { AwsClient } from 'aws4fetch'
 import { chunk } from '../utils'
 
@@ -19,18 +20,16 @@ export default new Hono<{
         since: z.coerce.date().optional().default(new Date(0))
     })), async c => {
         const { since } = c.req.valid("query")
-        const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
+        const db = drizzle(c.env.DB)
 
-        const files = await prisma.file.findMany({
-            where: {
-                createdAt: {
-                    gte: since
-                },
-                status: {
-                    not: "Published"
-                }
-            }
-        })
+        const files = await db.select().from(fileTable)
+            .where(
+                and(
+                    gte(fileTable.createdAt, since),
+                    ne(fileTable.status, "Published")
+                )
+            )
+            .orderBy(desc(fileTable.createdAt))
 
         return c.json({ files, success: true })
     })
@@ -38,22 +37,18 @@ export default new Hono<{
         ids: z.array(z.number())
     })), async c => {
         const { ids } = c.req.valid("json")
-        const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
+        const db = drizzle(c.env.DB)
 
-        const check = await prisma.file.findMany({
-            select: {
-                id: true,
-                status: true
-            },
-            where: {
-                id: {
-                    in: ids
-                },
-                status: {
-                    notIn: ["Uploaded", "Published"]
-                }
-            }
-        })
+        const check = await db.select({
+            id: fileTable.id,
+            status: fileTable.status
+        }).from(fileTable)
+            .where(
+                and(
+                    inArray(fileTable.id, ids),
+                    notInArray(fileTable.status, ["Uploaded", "Published"])
+                )
+            )
 
         if (check.length) {
             console.error("文件状态不正确", check)
@@ -64,28 +59,17 @@ export default new Hono<{
             })
         }
         console.log("Publishing", ids)
-        await prisma.file.updateMany({
-            where: {
-                id: {
-                    in: ids
-                }
-            },
-            data: {
+        for (const id of ids) {
+            await db.update(fileTable).set({
                 status: "Published"
-            }
-        })
+            }).where(eq(fileTable.id, id))
+        }
 
-        const updated = await prisma.file.findMany({
-            select: {
-                fileName: true,
-                id: true
-            },
-            where: {
-                id: {
-                    in: ids
-                }
-            }
-        })
+        const updated = await db.select({
+            fileName: fileTable.fileName,
+            id: fileTable.id
+        }).from(fileTable)
+            .where(inArray(fileTable.id, ids))
 
         const s3 = new AwsClient({
             accessKeyId: c.env.S3_ADMIN_ACCESS_KEY_ID,

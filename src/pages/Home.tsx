@@ -2,6 +2,7 @@
 import { Search } from "@/components/search";
 import { Link } from "react-router-dom";
 
+// @ts-ignore
 import '@fontsource-variable/saira';
 import { useState } from "react";
 import { cn } from "@/lib/utils";

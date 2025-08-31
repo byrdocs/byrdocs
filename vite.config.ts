@@ -12,8 +12,6 @@ process.env.VITE_GIT_COMMIT_DATE = commitDate;
 process.env.VITE_GIT_COMMIT_HASH = commitHash;
 process.env.VITE_GIT_LAST_COMMIT_MESSAGE = lastCommitMessage;
 
-const BASE_URL = process.env.BASE_URL ?? "https://byrdocs.org";
-
 export default defineConfig({
   plugins: [react(), cloudflare()],
   resolve: {
@@ -21,11 +19,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-//   server: {
-//     proxy: {
-//         "/files": BASE_URL,
-//         "/thumbnail": BASE_URL,
-//         "/api": BASE_URL
-//     }
-//   }
+  define: {
+    global: "globalThis",
+  },
+  ssr: {
+    noExternal: true,
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: false,
+      },
+    },
+  },
 })
