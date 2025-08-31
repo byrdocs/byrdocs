@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /files/
+Disallow: /login/
+Disallow: /auth/
+Allow: /
+Allow: /about/

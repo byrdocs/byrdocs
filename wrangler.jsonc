@@ -1,0 +1,59 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "byrdocs-edge",
+    "main": "worker/index.ts",
+    "compatibility_date": "2025-08-31",
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "COUNTER",
+                "class_name": "Counter"
+            },
+            {
+                "name": "OAUTH",
+                "class_name": "OAuth"
+            }
+        ]
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_classes": ["Counter"]
+        }
+    ],
+    "observability": {
+        "enabled": true
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "byrdocs",
+            "database_id": "697122fa-0b02-4a41-9cb7-e139c28c4574"
+        }
+    ],
+    "r2_buckets": [
+        {
+            "binding": "R2",
+            "bucket_name": "byrdocs"
+        }
+    ],
+    "analytics_engine_datasets": [
+        {
+            "binding": "AE",
+            "dataset": "byrdocs"
+        }
+    ],
+    "triggers": {
+        "crons": [
+            "0 0 * * *"
+        ]
+    },
+    "assets": {
+        "not_found_handling": "single-page-application",
+        "run_worker_first": [
+            "/api/*",
+            "/schema/*",
+            "/files/*"
+        ]
+    }
+}
