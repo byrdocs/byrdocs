@@ -9,7 +9,7 @@ function BuildInfo() {
                 <div className="space-x-1 px-6">
                     <span className="text-muted-foreground/50 group-hover:text-muted-foreground">{date.toLocaleString()}</span>
                     <a
-                        href={"https://github.com/byrdocs/byrdocs-frontend/commit/" + import.meta.env.VITE_GIT_COMMIT_HASH}
+                        href={"https://github.com/byrdocs/byrdocs/commit/" + import.meta.env.VITE_GIT_COMMIT_HASH}
                         className="text-blue-500/50 group-hover:text-blue-400" target="_blank">
                         {import.meta.env.VITE_GIT_LAST_COMMIT_MESSAGE}
                     </a>
