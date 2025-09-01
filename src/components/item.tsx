@@ -22,7 +22,12 @@ import { Link } from "react-router-dom";
 
 const origin = location.hostname.endsWith("byrdocs-frontend.pages.dev") ? "https://byrdocs.org" : "";
 const url = (_type: string, md5: string, filetype: string) => `${origin}/files/${md5}.${filetype}`;
-const preview_url = (md5: string) => url("preview", md5, "pdf") + "?f=2";
+const preview_url = (md5: string, filename: string) => {
+    const base_url = new URL(url("preview", md5, "pdf"));
+    base_url.searchParams.set("filename", filename);
+    base_url.searchParams.set("f", "2");
+    return base_url.toString();
+}
 const thumbnail_url = (md5: string) => `${origin}/files/${md5}.webp`;
 
 function Preview() {
@@ -48,8 +53,8 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
             <div className="grid grid-cols-[112.5px_1fr] md:grid-cols-[150px_1fr] min-h-[150px] md:min-h-[200px]">
                 {children}
             </div>
-            {id && 
-            <div 
+            {id &&
+            <div
                 className={cn(
                     "bottom-1 right-1 absolute group-hover/card:opacity-100",
                     "text-muted-foreground/20 text-xs transition-opacity",
@@ -58,19 +63,19 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                         "opacity-0": !copied
                     }
                 )}
-            >   
+            >
                 <Link to={`https://publish.byrdocs.org/edit/${id}`} title="编辑此文件的元信息">
                     <Edit size={11} className="transition-colors cursor-pointer hover:text-muted-foreground/60" />
                 </Link>
                 <div className="inline-block mx-1 border-l-[0.5px] h-3"></div>
                 {copied ? (
-                    <CopyCheck 
+                    <CopyCheck
                         size={11}
                         className="transition-colors cursor-pointer text-primary"
                     />
                 ) : (
                     <div title="复制文件 md5">
-                        <Copy 
+                        <Copy
                             size={11}
                             xlinkTitle="123"
                             className="transition-colors peer hover:text-muted-foreground/60 cursor-pointer"
@@ -84,7 +89,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                         />
                     </div>
                 )}
-                <Link 
+                <Link
                     to={`https://github.com/byrdocs/byrdocs-archive/blob/master/metadata/${id}.yml`}
                     target="_blank"
                     title="查看此文件在 GitHub 上的元信息"
@@ -298,7 +303,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
             }
         }
     }, [])
-    
+
 
     return (
         <>
@@ -307,7 +312,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                     <ItemCard
                         id={item.id}
                         key={item.id + item.data.filetype}
-                        onPreview={() => onPreview(preview_url(item.id))}
+                        onPreview={() => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`))}
                         canPreview={item.data.filetype === "pdf"}
                     >
                         <ItemCover
@@ -389,7 +394,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             id={item.data.filetype === 'pdf' ? item.id : undefined}
                             key={item.id + item.data.filetype}
                             onPreview={() => onPreview(item.data.filetype === 'pdf' ?
-                                preview_url(item.id) :
+                                preview_url(item.id, `${item.data.title}.${item.data.filetype}`) :
                                 item.url)}
                             canPreview={true}
                         >
@@ -466,7 +471,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             <ItemCard
                                 id={item.id}
                                 key={item.id + item.data.filetype}
-                                onPreview={() => onPreview(preview_url(item.id))}
+                                onPreview={() => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`))}
                                 canPreview={item.data.filetype === "pdf"}
                             >
                                 <ItemCover
