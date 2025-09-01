@@ -220,7 +220,6 @@ export default new Hono<{
             }).toString()
         })
         if (!token.ok) {
-            console.log(await token.text())
             return c.json({ error: "获取临时凭证失败", success: false })
         }
         const parser = new XMLParser()

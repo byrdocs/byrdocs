@@ -38,9 +38,6 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const token = c.req.header("X-Byrdocs-Token")
             const ip = c.req.header("CF-Connecting-IP")
             const cookie = await getSignedCookie(c, c.env.JWT_SECRET, "login")
-            console.log(ip, ip && ipChecker(ip))
-            console.log(token)
-            console.log(cookie)
             if (
                 (!ip || !ipChecker(ip)) &&
                 token !== c.env.TOKEN &&

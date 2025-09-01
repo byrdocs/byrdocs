@@ -295,7 +295,6 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                                 <div
                                                     className="p-4 w-full rounded-lg border border-gray-400 dark:border-gray-900 text-gray-600 dark:text-gray-500 hover:dark:border-gray-800 shadow-xs hover:shadow-md transition-all cursor-pointer group"
                                                     onClick={(e) => {
-                                                        console.log(e)
                                                         if ((e.target as HTMLElement).tagName === "A" && !(e.target as HTMLElement).classList.contains("title-link")) return
                                                         window.open(announcement.url)
                                                     }}
