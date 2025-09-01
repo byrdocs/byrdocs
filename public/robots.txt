@@ -1,4 +1,4 @@
-# BYRDocs Robots.txt
+# BYR Docs Robots.txt
 User-agent: *
 Disallow: /files/
 Disallow: /login/
