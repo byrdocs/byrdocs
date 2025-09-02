@@ -71,12 +71,26 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 })
             }
         }
-        const req = await sign(c.env, path, c.req.raw.headers)
-        const res = await fetch(req)
+        let res = await caches.default.match(c.req.raw)
+        if (!res) {
+            console.log({
+                type: "cache",
+                status: "miss",
+                path
+            })
+            const req = await sign(c.env, path, c.req.raw.headers)
+            res = await fetch(req)
+        } else {
+            console.log({
+                type: "cache",
+                status: "hit",
+                path
+            })
+        }
         if (filename && res.status === 200) {
             const headers = new Headers(res.headers)
             headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`)
-            return new Response(res.body, {
+            res = new Response(res.body, {
                 status: res.status,
                 statusText: res.statusText,
                 webSocket: res.webSocket,
@@ -84,6 +98,15 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 headers
             })
         }
+        c.executionCtx.waitUntil(new Promise<void>(async r => {
+            await caches.default.put(c.req.raw, res.clone())
+            console.log({
+                type: "cache",
+                status: "set",
+                path
+            })
+            r()
+        }))
         return res
     })
 
