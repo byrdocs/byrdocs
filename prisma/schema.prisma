@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  previewFeatures = ["driverAdapters"]
+  output   = "../worker/generated/prisma"
+
+  runtime                = "workerd"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+
+}
+
+model File {
+  id            Int      @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  fileName      String
+  fileSize      Int?    // in bytes
+  uploader      String
+  uploadTime    DateTime?
+  status        String  // 'Pending', 'Timeout', 'Expired', 'Error', 'Uploaded', 'Published'
+  errorMessage  String? // When status is 'Error'
+
+  @@map("file")
+}

@@ -10,9 +10,8 @@ import { buptSubnets } from '../bupt';
 import { AwsClient } from 'aws4fetch'
 
 import apiRoute from './api';
-import { drizzle } from 'drizzle-orm/d1';
-import { or, and, eq, lte, notInArray } from 'drizzle-orm';
-import { file as fileTable } from './schema';
+import { PrismaD1 } from '@prisma/adapter-d1';
+import { PrismaClient } from './generated/prisma/client';
 import { sign } from './utils';
 export { OAuth } from './objects/oauth';
 
@@ -123,27 +122,38 @@ export default {
             service: "s3",
         })
 
-        const db = drizzle(env.DB)
-        const files = await db.select().from(fileTable).where(
-            or(
-                and(
-                    notInArray(fileTable.status, ['Uploaded', 'Published']),
-                    lte(fileTable.createdAt, new Date(Date.now() - 3600 * 1000))
-                ),
-                and(
-                    eq(fileTable.status, 'Uploaded'),
-                    lte(fileTable.createdAt, new Date(Date.now() - 14 * 24 * 3600 * 1000))
-                )
-            )
-        );
-        for (const fileRecord of files) {
-            console.log('DELETE', fileRecord.fileName, "Reason:", fileRecord.status === "Uploaded" ? "Expired" : "Timeout")
-            await s3.fetch(`${env.S3_HOST}/${env.S3_BUCKET}/${fileRecord.fileName}`, {
+        const prisma = new PrismaClient({ adapter: new PrismaD1(env.DB) })
+        const files = await prisma.file.findMany({
+            where: {
+                OR: [
+                    {
+                        AND: [
+                            { status: { notIn: ['Uploaded', 'Published'] } },
+                            { createdAt: { lte: new Date(Date.now() - 3600 * 1000) } }
+                        ],
+                    },
+                    {
+                        AND: [
+                            { status: 'Uploaded' },
+                            { createdAt: { lte: new Date(Date.now() - 14 * 24 * 3600 * 1000) } }
+                        ],
+                    },
+                ],
+            },
+        });
+        for (const file of files) {
+            console.log('DELETE', file.fileName, "Reason:", file.status === "Uploaded" ? "Expired" : "Timeout")
+            await s3.fetch(`${env.S3_HOST}/${env.S3_BUCKET}/${file.fileName}`, {
                 method: "DELETE"
             })
-            await db.update(fileTable).set({
-                status: fileRecord.status === "Uploaded" ? "Expired" : "Timeout"
-            }).where(eq(fileTable.id, fileRecord.id))
+            await prisma.file.update({
+                where: {
+                    id: file.id
+                },
+                data: {
+                    status: file.status === "Uploaded" ? "Expired" : "Timeout"
+                }
+            })
         }
     }
 }

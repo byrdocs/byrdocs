@@ -4,15 +4,14 @@ import { AwsClient } from 'aws4fetch'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { XMLParser } from 'fast-xml-parser'
-import { drizzle } from 'drizzle-orm/d1'
-import { eq, count, and } from 'drizzle-orm'
-import { file as fileTable } from '../schema'
+import { PrismaClient } from '../generated/prisma/client';
+import { PrismaD1 } from '@prisma/adapter-d1'
 
 async function s3_test() {
     const res = await fetch('https://s3.byrdocs.org/webhook-test')
     if (res.status === 200) {
         const text = await res.text()
-        if (text === "pong") return true
+        if (text.includes("BYR Docs Robots.txt")) return true
         throw new Error(`Got unexpected response: ${text}`)
     }
     throw new Error(`HTTP Code is ${res.status}`)
@@ -57,32 +56,35 @@ export default new Hono<{
         if (body.EventName !== "s3:ObjectCreated:Put" && body.EventName !== "s3:ObjectCreated:CompleteMultipartUpload") {
             return c.json({ success: true })
         }
-        const db = drizzle(c.env.DB)
+        const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
         for (const record of body.Records) {
             if (record.s3.bucket.name !== c.env.S3_BUCKET) continue
-            const countResult = await db.select({ count: count(fileTable.id) })
-                .from(fileTable)
-                .where(eq(fileTable.fileName, record.s3.object.key))
-            const fileCount = countResult[0]?.count || 0
-            if (fileCount == 0) continue;
-            const fileRecord = await db.select().from(fileTable)
-                .where(
-                    and(
-                        eq(fileTable.fileName, record.s3.object.key),
-                        eq(fileTable.status, "Pending")
-                    )
-                )
-                .limit(1)
-            const fileResult = fileRecord[0] || null
-            if (fileCount != 0 && !fileResult) {
+            const count = await prisma.file.count({
+                where: {
+                    fileName: record.s3.object.key
+                }
+            })
+            if (count == 0) continue;
+            const file = await prisma.file.findFirst({
+                where: {
+                    fileName: record.s3.object.key,
+                    status: "Pending"
+                }
+            })
+            if (count != 0 && !file) {
                 continue
             }
 
             async function setError(reason: string) {
-                await db.update(fileTable).set({
-                    status: "Error",
-                    errorMessage: reason
-                }).where(eq(fileTable.id, fileResult!.id))
+                await prisma.file.update({
+                    where: {
+                        id: file!.id
+                    },
+                    data: {
+                        status: "Error",
+                        errorMessage: reason
+                    }
+                })
                 console.log('DELETE', record.s3.object.key, 'Reason:', reason)
                 await c.get("s3").fetch(`${c.env.S3_HOST}/${c.env.S3_BUCKET}/${record.s3.object.key}`, {
                     method: "DELETE"
@@ -105,16 +107,21 @@ export default new Hono<{
         </Tag>
         <Tag>
             <Key>uploader</Key>
-            <Value>${fileResult?.uploader ?? "Unknown"}</Value>
+            <Value>${file?.uploader ?? "Unknown"}</Value>
         </Tag>
    </TagSet>
 </Tagging>`
             })
-            await db.update(fileTable).set({
-                status: "Uploaded",
-                uploadTime: new Date(),
-                fileSize: record.s3.object.size
-            }).where(eq(fileTable.id, fileResult!.id))
+            await prisma.file.update({
+                where: {
+                    id: file!.id
+                },
+                data: {
+                    status: "Uploaded",
+                    uploadTime: new Date(),
+                    fileSize: record.s3.object.size
+                }
+            })
         }
         return c.json({ success: true })
     })
@@ -168,15 +175,14 @@ export default new Hono<{
             return c.json({ error: "文件预检失败, status=" + file.status.toString(), success: false })
         }
 
-        const db = drizzle(c.env.DB)
+        const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
 
-        const uploaded = await db.select().from(fileTable)
-            .where(
-                and(
-                    eq(fileTable.uploader, c.get("id")!.toString()),
-                    eq(fileTable.status, "Uploaded")
-                )
-            )
+        const uploaded = await prisma.file.findMany({
+            where: {
+                uploader: c.get("id")!.toString(),
+                status: "Uploaded"
+            }
+        })
 
         const totalSize = uploaded
             .filter(f => f.fileSize !== null)
@@ -235,12 +241,17 @@ export default new Hono<{
             }
         }
         try {
-            await db.delete(fileTable).where(eq(fileTable.fileName, key))
-            await db.insert(fileTable).values({
-                fileName: key,
-                uploader: c.get("id")!.toString(),
-                status: "Pending",
-                createdAt: new Date()
+            await prisma.file.deleteMany({
+                where: {
+                    fileName: key
+                }
+            })
+            await prisma.file.create({
+                data: {
+                    fileName: key,
+                    uploader: c.get("id")!.toString(),
+                    status: "Pending"
+                }
             })
         } catch (e) {
             return c.json({ error: (e as Error).message || e?.toString() || "未知错误", success: false })

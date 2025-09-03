@@ -174,3 +174,5 @@ dist
 .DS_Store
 
 ae.sh
+
+worker/generated
