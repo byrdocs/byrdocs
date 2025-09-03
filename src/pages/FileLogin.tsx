@@ -70,103 +70,107 @@ const LoginForm = ({
     goTo: (screen: LoginState['current']) => void
     to: string | null
 }) => (
-    <Card className="w-full sm:w-[500px] mx-auto">
-        <CardHeader>
-            <CardTitle className="text-2xl">登录 BYR Docs</CardTitle>
-            <CardDescription>
-                您没有使用北邮校园网(IPv6)访问本站
-                <HelpCircle
-                    className="inline-block w-4 h-4 cursor-pointer hover:text-foreground"
-                    onClick={() => goTo('explain')}
-                />
-                ，我们无法确定您的身份，请您考虑使用
-                <Link
-                    to="https://auth.bupt.edu.cn/authserver/login"
-                    className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
-                    target="_blank"
-                >
-                    北邮统一认证
-                </Link>
-                账号登录。
-            </CardDescription>
-            {state.errorMsg && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{state.errorMsg}</AlertDescription>
-                </Alert>
-            )}
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="studentId">
-                        学号
-                    </label>
-                    <Input
-                        id="studentId"
-                        type="text"
-                        name="studentId"
-                        minLength={10}
-                        maxLength={10}
-                        required
-                        pattern="20\d{8}"
-                        value={studentId}
-                        onChange={(e) => setStudentId(e.target.value)}
-                        className="h-10"
+    <div className="px-2">
+        <Card className="mx-auto w-full sm:w-[500px]">
+            <CardHeader>
+                <CardTitle className="text-2xl">登录 BYR Docs</CardTitle>
+                <CardDescription>
+                    您没有使用北邮校园网(IPv6)访问本站
+                    <HelpCircle
+                        className="inline-block w-4 h-4 cursor-pointer hover:text-foreground"
+                        onClick={() => goTo('explain')}
                     />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="password">
-                        密码
-                    </label>
-                    <Input
-                        id="password"
-                        type="password"
-                        name="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-10"
-                    />
-                </div>
-            </CardContent>
-            <CardFooter className="flex-col space-y-4">
-                <Button
-                    type="submit"
-                    className="w-full h-10"
-                    disabled={state.submitted}
-                >
-                    {state.submitted ? '登录中...' : '登录'}
-                </Button>
-                <div className="flex flex-col space-y-1 text-xs text-muted-foreground w-full">
-                    <div className="space-x-2 text-center">
-                        <button
-                            type="button"
-                            className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                            onClick={() => goTo('loginExplain')}
-                        >
-                            此登录是如何工作的?
-                        </button>
-                        <span>|</span>
-                        <button
-                            type="button"
-                            className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                            onClick={() => goTo('explain')}
-                        >
-                            关于网络环境
-                        </button>
-                        <span>|</span>
-                        <a
-                            href={to ? `/api/auth/login?${new URLSearchParams({ to }).toString()}` : "/api/auth/login"}
-                            className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                            其他登录方式
-                        </a>
+                    ，我们无法确定您的身份，请您考虑使用
+                    <Link
+                        to="https://auth.bupt.edu.cn/authserver/login"
+                        className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
+                        target="_blank"
+                    >
+                        北邮统一认证
+                    </Link>
+                    账号登录。
+                </CardDescription>
+                {state.errorMsg && (
+                    <Alert variant="destructive" className="flex flex-row items-center py-3 gap-2">
+                        <div>
+                            <AlertCircle className="h-4 w-4" />
+                        </div>
+                        <AlertDescription>{state.errorMsg}</AlertDescription>
+                    </Alert>
+                )}
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="studentId">
+                            学号
+                        </label>
+                        <Input
+                            id="studentId"
+                            type="text"
+                            name="studentId"
+                            minLength={10}
+                            maxLength={10}
+                            required
+                            pattern="20\d{8}"
+                            value={studentId}
+                            onChange={(e) => setStudentId(e.target.value)}
+                            className="h-10"
+                        />
                     </div>
-                </div>
-            </CardFooter>
-        </form>
-    </Card>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="password">
+                            密码
+                        </label>
+                        <Input
+                            id="password"
+                            type="password"
+                            name="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="h-10"
+                        />
+                    </div>
+                </CardContent>
+                <CardFooter className="flex-col space-y-4">
+                    <Button
+                        type="submit"
+                        className="w-full h-10"
+                        disabled={state.submitted}
+                    >
+                        {state.submitted ? '登录中...' : '登录'}
+                    </Button>
+                    <div className="flex flex-col space-y-1 text-xs text-muted-foreground w-full">
+                        <div className="space-x-2 text-center">
+                            <button
+                                type="button"
+                                className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                onClick={() => goTo('loginExplain')}
+                            >
+                                此登录是如何工作的?
+                            </button>
+                            <span>|</span>
+                            <button
+                                type="button"
+                                className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                                onClick={() => goTo('explain')}
+                            >
+                                关于网络环境
+                            </button>
+                            <span>|</span>
+                            <a
+                                href={to ? `/api/auth/login?${new URLSearchParams({ to }).toString()}` : "/api/auth/login"}
+                                className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                                其他登录方式
+                            </a>
+                        </div>
+                    </div>
+                </CardFooter>
+            </form>
+        </Card>
+    </div>
 )
 
 const NetworkExplanation = ({

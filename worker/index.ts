@@ -71,7 +71,8 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 })
             }
         }
-        let res = await caches.default.match(c.req.raw)
+        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, "https://byrdocs.org"))
+        let res = await caches.default.match(cacheKey)
         if (!res) {
             console.log({
                 type: "cache",
@@ -99,7 +100,10 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             })
         }
         c.executionCtx.waitUntil(new Promise<void>(async r => {
-            await caches.default.put(c.req.raw, res.clone())
+            const cacheValue = res.clone()
+            cacheValue.headers.set("Cache-Control", "public, s-maxage=31536000, max-age=31536000, immutable")
+            cacheValue.headers.delete("Set-Cookie")
+            await caches.default.put(cacheKey, cacheValue)
             console.log({
                 type: "cache",
                 status: "set",
