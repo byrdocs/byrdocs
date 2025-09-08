@@ -27,7 +27,10 @@ export default new Hono<{
     })
     .get('/ip', async (c) => {
         const ip = c.req.header('CF-Connecting-IP') || '未知';
-        return c.text(ip);
+        return c.json({
+            ip,
+            bupt: isBupt(c.req.raw.cf),
+        })
     })
     .post(
         '/login',

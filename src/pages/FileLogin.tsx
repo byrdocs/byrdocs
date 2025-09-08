@@ -1,6 +1,6 @@
 import { FormEvent, useState, useEffect } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { AlertCircle, HelpCircle } from "lucide-react"
+import { AlertCircle, Check, HelpCircle } from "lucide-react"
 
 import {
     Alert,
@@ -21,7 +21,10 @@ interface LoginState {
     current: 'login' | 'explain' | 'loginExplain' | 'success'
     submitted: boolean
     errorMsg: string
-    ip: string
+    network: {
+        ip: string,
+        bupt: boolean
+    }
 }
 
 const LoginFooter = () => (
@@ -59,7 +62,8 @@ const LoginForm = ({
     setPassword,
     handleSubmit,
     goTo,
-    to
+    to,
+    navigate
 }: {
     state: LoginState
     studentId: string
@@ -68,28 +72,35 @@ const LoginForm = ({
     setPassword: (value: string) => void
     handleSubmit: (e: FormEvent) => void
     goTo: (screen: LoginState['current']) => void
-    to: string | null
+    to: string | null,
+    navigate: (path: string) => void
 }) => (
     <div className="px-2">
         <Card className="mx-auto w-full sm:w-[500px]">
             <CardHeader>
                 <CardTitle className="text-2xl">登录 BYR Docs</CardTitle>
-                <CardDescription>
-                    您没有使用北邮校园网访问本站
-                    <HelpCircle
-                        className="inline-block w-4 h-4 cursor-pointer hover:text-foreground"
-                        onClick={() => goTo('explain')}
-                    />
-                    ，我们无法确定您的身份，请您考虑使用
-                    <Link
-                        to="https://auth.bupt.edu.cn/authserver/login"
-                        className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
-                        target="_blank"
-                    >
-                        北邮统一认证
-                    </Link>
-                    账号登录。
-                </CardDescription>
+                {state.network.bupt ? (
+                    <CardDescription>
+                        您当前在北邮校园网内，无需登录即可使用本站服务。
+                    </CardDescription>
+                ) : (
+                    <CardDescription>
+                        您没有使用北邮校园网访问本站
+                        <HelpCircle
+                            className="inline-block w-4 h-4 cursor-pointer hover:text-foreground"
+                            onClick={() => goTo('explain')}
+                        />
+                        ，我们无法确定您的身份，请您考虑使用
+                        <Link
+                            to="https://auth.bupt.edu.cn/authserver/login"
+                            className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
+                            target="_blank"
+                        >
+                            北邮统一认证
+                        </Link>
+                        账号登录。
+                    </CardDescription>
+                )}
                 {state.errorMsg && (
                     <Alert variant="destructive" className="flex flex-row items-center py-3 gap-2">
                         <div>
@@ -100,47 +111,59 @@ const LoginForm = ({
                 )}
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="studentId">
-                            学号
-                        </label>
-                        <Input
-                            id="studentId"
-                            type="text"
-                            name="studentId"
-                            minLength={10}
-                            maxLength={10}
-                            required
-                            pattern="20\d{8}"
-                            value={studentId}
-                            onChange={(e) => setStudentId(e.target.value)}
-                            className="h-10"
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="password">
-                            密码
-                        </label>
-                        <Input
-                            id="password"
-                            type="password"
-                            name="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="h-10"
-                        />
-                    </div>
-                </CardContent>
+                {!state.network.bupt && (
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="studentId">
+                                学号
+                            </label>
+                            <Input
+                                id="studentId"
+                                type="text"
+                                name="studentId"
+                                minLength={10}
+                                maxLength={10}
+                                required
+                                pattern="20\d{8}"
+                                value={studentId}
+                                onChange={(e) => setStudentId(e.target.value)}
+                                className="h-10"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="password">
+                                密码
+                            </label>
+                            <Input
+                                id="password"
+                                type="password"
+                                name="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="h-10"
+                            />
+                        </div>
+                    </CardContent>
+                )}
                 <CardFooter className="flex-col space-y-4">
-                    <Button
-                        type="submit"
-                        className="w-full h-10"
-                        disabled={state.submitted}
-                    >
-                        {state.submitted ? '登录中...' : '登录'}
-                    </Button>
+                    {state.network.bupt ?
+                        <Button
+                            className="w-full h-10"
+                            onClick={() => navigate(to ?? '/')}
+                        >
+                            继续
+                        </Button>
+                        :
+                        <Button
+                            type="submit"
+                            className="w-full h-10"
+                            disabled={state.submitted}
+                        >
+                            {state.submitted ? '登录中...' : '登录'}
+                        </Button>
+
+                    }
                     <div className="flex flex-col space-y-1 text-xs text-muted-foreground w-full">
                         <div className="space-x-2 text-center">
                             <button
@@ -186,20 +209,28 @@ const NetworkExplanation = ({
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>本项目仅对北京邮电大学在校学生提供服务。我们使用您的 IP 地址来验证您是否在校内。</p>
-            <p>您当前的 IP 地址是 <span className="font-semibold text-foreground">{state.ip}</span>。</p>
-            <p>若您的 IP 地址不属于北邮教育网地址，我们将需通过其他方式验证您的身份。</p>
-
-            <h4 className="font-bold text-foreground pt-2">如果我不在校内，我该怎么办？</h4>
             <p>
-                如果您不在校内，可以使用
-                <button
-                    className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
-                    onClick={() => goTo('login')}
-                >
-                    北邮统一认证
-                </button>
-                登录。
+                您当前的 IP 地址是
+                <span className="font-semibold text-foreground mx-1">{state.network.ip}</span>
+                {state.network.bupt ? (
+                    <Check className="inline-block w-4 h-4 text-green-500" />
+                ) : (
+                    <AlertCircle className="inline-block w-4 h-4 text-red-500" />
+                )}。
             </p>
+            {!state.network.bupt ?
+                (<p>
+                    您可以使用
+                    <button
+                        className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
+                        onClick={() => goTo('login')}
+                    >
+                        北邮统一认证
+                    </button>
+                    登录。
+                </p>) :
+                (<p>您当前在北邮校园网内，无需登录即可使用本站服务。</p>)
+            }
         </CardContent>
         <CardFooter>
             <Button className="w-full h-10" onClick={() => goTo('login')}>
@@ -307,7 +338,10 @@ export default function Login() {
         current: 'login',
         submitted: false,
         errorMsg: '',
-        ip: '未知'
+        network: {
+            ip: '加载中...',
+            bupt: false
+        }
     })
     const [studentId, setStudentId] = useState('')
     const [password, setPassword] = useState('')
@@ -319,8 +353,8 @@ export default function Login() {
     // Get IP address on mount
     useEffect(() => {
         fetch('/api/ip')
-            .then(res => res.text())
-            .then(ip => setState(prev => ({ ...prev, ip })))
+            .then(res => res.json())
+            .then(network => setState(prev => ({ ...prev, network })))
             .catch(() => {})
     }, [])
 
@@ -411,6 +445,7 @@ export default function Login() {
                         handleSubmit={handleSubmit}
                         goTo={goTo}
                         to={to}
+                        navigate={navigate}
                     />
                 )
             case 'explain':
