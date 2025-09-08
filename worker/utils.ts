@@ -22,3 +22,8 @@ export async function sign(env: Cloudflare.Env, path: string, headers: Headers):
         )
     });
 }
+
+
+export function isBupt(cf?: CfProperties): boolean {
+    return cf ? (cf.asn === 24350 || cf.asn === 4538) : false;
+}

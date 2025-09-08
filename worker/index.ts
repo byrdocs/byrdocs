@@ -4,18 +4,13 @@ import { getSignedCookie, setSignedCookie } from 'hono/cookie'
 import { Counter } from './objects/counter';
 export { Counter } from './objects/counter';
 
-import { createChecker } from 'is-in-subnet';
-import { buptSubnets } from '../bupt';
-
 import { AwsClient } from 'aws4fetch'
 
 import apiRoute from './api';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from './generated/prisma/client';
-import { sign } from './utils';
+import { isBupt, sign } from './utils';
 export { OAuth } from './objects/oauth';
-
-const ipChecker = createChecker(buptSubnets);
 
 export async function setCookie(c: Context) {
     await setSignedCookie(c, "login", Date.now().toString(), c.env.JWT_SECRET, {
@@ -38,7 +33,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const ip = c.req.header("CF-Connecting-IP")
             const cookie = await getSignedCookie(c, c.env.JWT_SECRET, "login")
             if (
-                (!ip || !ipChecker(ip)) &&
+                (!isBupt(c.req.raw.cf)) &&
                 token !== c.env.TOKEN &&
                 (!cookie || isNaN(parseInt(cookie)) || Date.now() - parseInt(cookie) > 2592000 * 1000)
             ) {

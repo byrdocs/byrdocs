@@ -4,12 +4,9 @@ import { z } from 'zod';
 import authRoutes from './auth';
 import s3Routes from './s3';
 import fileRoutes from './file';
-import { createChecker } from 'is-in-subnet';
-import { buptSubnets } from '../../bupt';
+import { isBupt } from '../utils';
 import { byrdocs_login } from '@byrdocs/bupt-auth';
 import { Counter, setCookie } from '..';
-
-const ipChecker = createChecker(buptSubnets);
 
 export default new Hono<{
     Bindings: Cloudflare.Env;
@@ -42,8 +39,7 @@ export default new Hono<{
             })
         ),
         async (c) => {
-            const ip = c.req.header('CF-Connecting-IP') || '未知';
-            if (ip !== '未知' && ipChecker(ip)) {
+            if (isBupt(c.req.raw.cf)) {
                 await setCookie(c);
                 return c.json({ success: true, message: '已通过校园网验证登录' });
             }

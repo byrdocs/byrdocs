@@ -75,7 +75,7 @@ const LoginForm = ({
             <CardHeader>
                 <CardTitle className="text-2xl">登录 BYR Docs</CardTitle>
                 <CardDescription>
-                    您没有使用北邮校园网(IPv6)访问本站
+                    您没有使用北邮校园网访问本站
                     <HelpCircle
                         className="inline-block w-4 h-4 cursor-pointer hover:text-foreground"
                         onClick={() => goTo('explain')}
@@ -189,27 +189,6 @@ const NetworkExplanation = ({
             <p>您当前的 IP 地址是 <span className="font-semibold text-foreground">{state.ip}</span>。</p>
             <p>若您的 IP 地址不属于北邮教育网地址，我们将需通过其他方式验证您的身份。</p>
 
-            <h4 className="font-bold text-foreground pt-2">可以使用 IPv4 吗？</h4>
-            <p>北邮到 Cloudflare 的 IPv4 出口为北京移动，我们可能无法通过 IPv4 分辨您的身份。</p>
-
-            <h4 className="font-bold text-foreground pt-2">我的网络支持 IPv6 吗？</h4>
-            <p>
-                您可以通过
-                <Link to="https://test-ipv6.com/" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1" target="_blank">
-                    IPv6 测试网站
-                </Link>
-                测试。如果您处于北邮校园网环境中，您的网络应当已支持 IPv6。如果上述检测未通过，请检查您的设备的网络设置。
-            </p>
-
-            <h4 className="font-bold text-foreground pt-2">我已经使用了 IPv6，为什么还需要登录？</h4>
-            <p>
-                尽管您已启用 IPv6，但由于本站同时支持 IPv4 和 IPv6，您可能还是通过 IPv4 访问了本站。您可以尝试提高 IPv6 的使用优先级或禁用 IPv4，或者使用 IPv6 only 的网站镜像：
-                <Link to="https://v6.byrdocs.org/" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1" target="_blank">
-                    v6.byrdocs.org
-                </Link>
-                。
-            </p>
-
             <h4 className="font-bold text-foreground pt-2">如果我不在校内，我该怎么办？</h4>
             <p>
                 如果您不在校内，可以使用
@@ -239,7 +218,7 @@ const LoginExplanation = ({
         <CardHeader>
             <CardTitle className="text-2xl">此登录是如何工作的？</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
             <p>
                 本站使用
                 <Link to="https://auth.bupt.edu.cn/authserver/login" className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1" target="_blank">
