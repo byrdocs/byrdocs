@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface LoginState {
     current: 'login' | 'explain' | 'loginExplain' | 'success'
@@ -212,15 +213,29 @@ const NetworkExplanation = ({
             <p>
                 您当前的 IP 地址是
                 <span className="font-semibold text-foreground mx-1">{state.network.ip}</span>
-                {state.network.bupt ? (
-                    <Check className="inline-block w-4 h-4 text-green-500" />
-                ) : (
-                    <AlertCircle className="inline-block w-4 h-4 text-red-500" />
-                )}。
+                <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            {state.network.bupt ? (
+                                <Check className="inline-block w-4 h-4 text-green-500" />
+                            ) : (
+                                <AlertCircle className="inline-block w-4 h-4 text-red-500" />
+                            )}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {state.network.bupt ? (
+                                <>北邮教育网</>
+                            ) : (
+                                <>非北邮教育网</>
+                            )}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                。
             </p>
             {!state.network.bupt ?
                 (<p>
-                    您可以使用
+                    欲下载文件，请确保您在北邮校园网内，或使用
                     <button
                         className="text-blue-500 hover:underline dark:text-blue-400 dark:hover:text-blue-300 mx-1"
                         onClick={() => goTo('login')}
