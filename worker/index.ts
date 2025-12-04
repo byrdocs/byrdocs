@@ -73,8 +73,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 status: "miss",
                 path
             })
-            const req = await sign(c.env, path, c.req.raw.headers)
-            res = await fetch(req)
+            res = await sign(c.env, path, c.req.raw.headers)
         } else {
             console.log({
                 type: "cache",

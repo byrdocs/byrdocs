@@ -7,15 +7,15 @@ import { XMLParser } from 'fast-xml-parser'
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1'
 
-async function s3_test() {
-    const res = await fetch('https://s3.byrdocs.org/webhook-test')
-    if (res.status === 200) {
-        const text = await res.text()
-        if (text.includes("BYR Docs Robots.txt")) return true
-        throw new Error(`Got unexpected response: ${text}`)
-    }
-    throw new Error(`HTTP Code is ${res.status}`)
-}
+//async function s3_test() {
+//    const res = await fetch('https://s3.byrdocs.org/webhook-test')
+//    if (res.status === 200) {
+//        const text = await res.text()
+//        if (text.includes("BYR Docs Robots.txt")) return true
+//        throw new Error(`Got unexpected response: ${text}`)
+//    }
+//    throw new Error(`HTTP Code is ${res.status}`)
+//}
 
 export default new Hono<{
     Bindings: Cloudflare.Env,
@@ -25,14 +25,14 @@ export default new Hono<{
         canDownload: boolean
     }
 }>()
-    .use(async (c, next) => {
-        c.set("s3", new AwsClient({
-            accessKeyId: c.env.S3_ADMIN_ACCESS_KEY_ID,
-            secretAccessKey: c.env.S3_ADMIN_SECRET_ACCESS_KEY,
-            service: "s3",
-        }))
-        await next()
-    })
+    //.use(async (c, next) => {
+    //    c.set("s3", new AwsClient({
+    //        accessKeyId: c.env.S3_ADMIN_ACCESS_KEY_ID,
+    //        secretAccessKey: c.env.S3_ADMIN_SECRET_ACCESS_KEY,
+    //        service: "s3",
+    //    }))
+    //    await next()
+    //})
     .post("/webhook", async c => {
         if (c.req.header("Authorization") !== "Bearer " + c.env.TOKEN) {
             return c.json({ error: "无效的 Token", success: false }, { status: 401 })
@@ -147,7 +147,17 @@ export default new Hono<{
         if (!c.get("canDownload")) {
             return c.json({ error: "无权访问", success: false }, { status: 403 })
         }
-        return c.get("s3").fetch(`${c.env.S3_HOST}/${c.env.S3_BUCKET}/` + (c.req.param("path") ?? ''))
+        const path=c.req.param("path")??"";
+        const object=await c.env.R2.get(path);
+        if(!object){
+            return new Response(`${path} Not Found`,{
+                status:404
+            });
+        }
+        const headers=new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set("etag",object.httpEtag);
+        return new Response(object.body,{headers});
     })
     .post("/upload", zValidator(
         'json',
@@ -157,11 +167,6 @@ export default new Hono<{
     ),
     async c => {
         const { key } = await c.req.valid("json")
-        try {
-            await s3_test()
-        } catch (e) {
-            return c.json({ error: "S3 服务器错误", success: false })
-        }
         if (!/^[0-9a-f]{32}\.(zip|pdf)$/.test(key)) {
             return c.json({ error: "文件名不合法", success: false })
         }
