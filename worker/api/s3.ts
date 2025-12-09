@@ -55,7 +55,10 @@ export default new Hono<{
     async c => {
         const { key } = await c.req.valid("json")
         if (!/^[0-9a-f]{32}\.(zip|pdf)$/.test(key)) {
-            return c.json({ error: "文件名不合法", success: false })
+            return c.json({
+                error: "文件名不合法",
+                success: false
+            })
         }
         const file=await c.env.R2.head(key)
         if(file){
@@ -101,9 +104,6 @@ export default new Hono<{
                 success:true,
                 key:multipartUpload.key,
                 uploadId:multipartUpload.uploadId,
-                tags:{
-                    status:"temp",
-                },
             },{
                 headers:{
                     "Content-Type":"application/x-www-form-urlencoded"
@@ -151,9 +151,6 @@ export default new Hono<{
                 key:key,
                 etag:uploadPart.etag,
                 partNumber:uploadPart.partNumber,
-                tags:{
-                    status:"temp",
-                },
             },{
                 headers:{
                     "Content-Type":"application/x-www-form-urlencoded"
