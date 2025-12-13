@@ -3,7 +3,7 @@ import { OAuth } from '../objects/oauth';
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { setCookie } from '..';
-import { byrdocs_login } from '@byrdocs/bupt-auth';
+import { login } from '@byrdocs/bupt-auth';
 
 const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {
     "byrdocs-publish": {
@@ -92,7 +92,7 @@ export default new Hono<{
     })), async c => {
         const { username, password, uuid } = c.req.valid("json")
         try {
-            await byrdocs_login(username, password, c.env.OCR_TOKEN)
+            await login(username, password, { ocr: { token: c.env.OCR_TOKEN } })
             return afterLogin(c, await c.get('auth').loginBUPT(username, uuid))
         } catch (e) {
             return c.json({ error: (e as Error).message || e?.toString() || "未知错误", success: false })
