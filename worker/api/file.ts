@@ -3,8 +3,6 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1'
-import { AwsClient } from 'aws4fetch'
-import { chunk } from '../utils'
 
 export default new Hono<{
     Bindings: Cloudflare.Env
@@ -34,7 +32,7 @@ export default new Hono<{
     })
     .post("/publish", zValidator('json', z.object({
         ids: z.array(z.number())
-    })), async c => {
+    })), async c =>{
         const { ids } = c.req.valid("json")
         const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
 
@@ -73,53 +71,12 @@ export default new Hono<{
             }
         })
 
-        const updated = await prisma.file.findMany({
-            select: {
-                fileName: true,
-                id: true
-            },
-            where: {
-                id: {
-                    in: ids
-                }
-            }
+        // R2 doesn't need tag cleanup like S3 did
+        // Files are managed via database records only
+
+        return c.json({
+            success: true,
+            message: `成功将 ${ids.length} 个文件标记为已发布`,
+            ids,
         })
-
-        const s3 = new AwsClient({
-            accessKeyId: c.env.S3_ADMIN_ACCESS_KEY_ID,
-            secretAccessKey: c.env.S3_ADMIN_SECRET_ACCESS_KEY,
-            service: "s3",
-        })
-
-        const responses = []
-
-        for (const files of chunk(updated, 5)) {
-            responses.push(...await Promise.all(files.map(async file => {
-                const res = await s3.fetch(`${c.env.S3_HOST}/${c.env.S3_BUCKET}/${file.fileName}?tagging=`, {
-                    method: "DELETE"
-                })
-                if (!res.ok) {
-                    return {
-                        status: "rejected",
-                        error: await res.text(),
-                        file
-                    }
-                }
-                return {
-                    status: "fulfilled",
-                    response: await res.text(),
-                    file
-                }
-            })))
-        }
-
-        if (responses.some(r => r.status === "rejected")) {
-            return c.json({
-                success: false,
-                error: "部分标签删除失败",
-                responses
-            })
-        }
-
-        return c.json({ success: true, responses })
     })

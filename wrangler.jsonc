@@ -1,6 +1,6 @@
 {
     "$schema": "node_modules/wrangler/config-schema.json",
-    "name": "byrdocs-edge",
+    "name": "byrdocs",
     "main": "worker/index.ts",
     "compatibility_date": "2025-08-31",
     "durable_objects": {
@@ -18,7 +18,10 @@
     "migrations": [
         {
             "tag": "v1",
-            "new_classes": ["Counter"]
+            "new_classes": [
+                "Counter",
+                "OAuth"
+            ]
         }
     ],
     "observability": {
@@ -28,13 +31,14 @@
         {
             "binding": "DB",
             "database_name": "byrdocs",
-            "database_id": "697122fa-0b02-4a41-9cb7-e139c28c4574"
+            "database_id": "6ed65ab1-6fc3-42c6-80f4-f75dc5d78f57"
         }
     ],
     "r2_buckets": [
         {
             "binding": "R2",
-            "bucket_name": "byrdocs"
+            "bucket_name": "byrdocs-file",
+            "preview_bucket_name": "byrdocs-file"
         }
     ],
     "analytics_engine_datasets": [
@@ -49,6 +53,8 @@
         ]
     },
     "assets": {
+        ////If you develop this site with `npx wrangler dev`, you may need this value
+        //"directory": "public",
         "not_found_handling": "single-page-application",
         "run_worker_first": [
             "/api/*",

@@ -25,7 +25,7 @@ model File {
   fileSize      Int?    // in bytes
   uploader      String
   uploadTime    DateTime?
-  status        String  // 'Pending', 'Timeout', 'Expired', 'Error', 'Uploaded', 'Published'
+  status        String  // 'Pending', 'Aborted', 'Timeout', 'Expired', 'Error', 'Uploaded', 'Published'
   errorMessage  String? // When status is 'Error'
 
   @@map("file")

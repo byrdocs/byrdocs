@@ -4,13 +4,12 @@ import { getSignedCookie, setSignedCookie } from 'hono/cookie'
 import { Counter } from './objects/counter';
 export { Counter } from './objects/counter';
 
-import { AwsClient } from 'aws4fetch'
-
 import apiRoute from './api';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from './generated/prisma/client';
 import { isBupt, sign } from './utils';
 export { OAuth } from './objects/oauth';
+import { SITE_BASE_URL, DATA_BASE_URL } from './site-config';
 
 export async function setCookie(c: Context) {
     await setSignedCookie(c, "login", Date.now().toString(), c.env.JWT_SECRET, {
@@ -23,7 +22,7 @@ export async function setCookie(c: Context) {
 
 const app = new Hono<{ Bindings: Cloudflare.Env }>()
     .route("/api", apiRoute)
-    .get("/schema/:path{.*?}", c => fetch("https://files.byrdocs.org/" + c.req.param("path")))
+    .get("/schema/:path{.*?}", c => fetch(`${DATA_BASE_URL}/${c.req.param("path")}`))
     .get("/files/:path{.*?}", async c => {
         const path = c.req.param("path")
         const isFile = !path.endsWith(".jpg") && !path.endsWith(".webp")
@@ -65,7 +64,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 })
             }
         }
-        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, "https://byrdocs.org"))
+        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, SITE_BASE_URL))
         let res = await caches.default.match(cacheKey)
         if (!res) {
             console.log({
@@ -73,8 +72,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 status: "miss",
                 path
             })
-            const req = await sign(c.env, path, c.req.raw.headers)
-            res = await fetch(req)
+            res = await sign(c.env, path, c.req.raw.headers)
         } else {
             console.log({
                 type: "cache",
@@ -111,12 +109,6 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
 export default {
     fetch: app.fetch,
     async scheduled(_event: ScheduledEvent, env: Cloudflare.Env, _ctx: ExecutionContext) {
-        const s3 = new AwsClient({
-            accessKeyId: env.S3_ADMIN_ACCESS_KEY_ID,
-            secretAccessKey: env.S3_ADMIN_SECRET_ACCESS_KEY,
-            service: "s3",
-        })
-
         const prisma = new PrismaClient({ adapter: new PrismaD1(env.DB) })
         const files = await prisma.file.findMany({
             where: {
@@ -138,9 +130,9 @@ export default {
         });
         for (const file of files) {
             console.log('DELETE', file.fileName, "Reason:", file.status === "Uploaded" ? "Expired" : "Timeout")
-            await s3.fetch(`${env.S3_HOST}/${env.S3_BUCKET}/${file.fileName}`, {
-                method: "DELETE"
-            })
+            // Delete from R2
+            await env.R2.delete(file.fileName)
+            // Update database status
             await prisma.file.update({
                 where: {
                     id: file.id
