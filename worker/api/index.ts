@@ -5,7 +5,7 @@ import authRoutes from './auth';
 import r2Routes from './r2';
 import fileRoutes from './file';
 import { isBupt } from '../utils';
-import { byrdocs_login } from '@byrdocs/bupt-auth';
+import { login } from '@byrdocs/bupt-auth';
 import { Counter, setCookie } from '..';
 
 export default new Hono<{
@@ -50,7 +50,7 @@ export default new Hono<{
             const { studentId, password } = c.req.valid('json');
 
             try {
-                if (await byrdocs_login(studentId, password, c.env.OCR_TOKEN)) {
+                if (await login(studentId, password, { ocr: { token: c.env.OCR_TOKEN } })) {
                     await setCookie(c);
                     return c.json({ success: true, message: '登录成功' });
                 }

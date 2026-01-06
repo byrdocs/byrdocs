@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@byrdocs/bupt-auth':
-        specifier: npm:@jsr/byrdocs__bupt-auth@^0.1.5
-        version: '@jsr/byrdocs__bupt-auth@0.1.5'
+        specifier: npm:@jsr/byrdocs__bupt-auth@^0.2.1
+        version: '@jsr/byrdocs__bupt-auth@0.2.1'
       '@fontsource-variable/saira':
         specifier: ^5.2.6
         version: 5.2.8
@@ -902,8 +902,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@jsr/byrdocs__bupt-auth@0.1.5':
-    resolution: {integrity: sha512-RO7TJWIeiJRUvlvbUw+U30keJ2doDYAMzkQtccr2UiOV0J/mqanAsTV5gOhiTNcsjl2TQaaCziiIfhNsDnqfXA==, tarball: https://npm.jsr.io/~/11/@jsr/byrdocs__bupt-auth/0.1.5.tgz}
+  '@jsr/byrdocs__bupt-auth@0.2.1':
+    resolution: {integrity: sha512-JkE5FtWmohK/YTsvMlMBtq8WAV5CM1Vv5JGNhAPHz7CsjlToLGnl8wFR2DvUSkWDu9l3QIfenAo2blcW5anBbQ==, tarball: https://npm.jsr.io/~/11/@jsr/byrdocs__bupt-auth/0.2.1.tgz}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3436,7 +3436,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@jsr/byrdocs__bupt-auth@0.1.5': {}
+  '@jsr/byrdocs__bupt-auth@0.2.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
