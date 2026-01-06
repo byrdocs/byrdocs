@@ -20,7 +20,9 @@ import { EnlargeIcon, ExternalIcon } from "./icons";
 import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
 
-const origin = location.hostname.endsWith("byrdocs-frontend.pages.dev") ? "https://byrdocs.org" : "";
+import { SITE_BASE_URL, PUBLISH_SITE_BASE_URL, DEV_SITE_BASE_URL, ARCHIVE_REPO_URL } from "../site-config.ts";
+
+const origin = location.hostname.endsWith(DEV_SITE_BASE_URL) ? SITE_BASE_URL : "";
 const url = (_type: string, md5: string, filetype: string) => `${origin}/files/${md5}.${filetype}`;
 const preview_url = (md5: string, filename: string) => {
     const base_url = url("preview", md5, "pdf");
@@ -65,7 +67,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     }
                 )}
             >
-                <Link to={`https://publish.byrdocs.org/edit/${id}`} title="编辑此文件的元信息">
+                <Link to={`https://${PUBLISH_SITE_BASE_URL}/edit/${id}`} title="编辑此文件的元信息">
                     <Edit size={11} className="transition-colors cursor-pointer hover:text-muted-foreground/60" />
                 </Link>
                 <div className="inline-block mx-1 border-l-[0.5px] h-3"></div>
@@ -91,7 +93,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     </div>
                 )}
                 <Link
-                    to={`https://github.com/byrdocs/byrdocs-archive/blob/master/metadata/${id}.yml`}
+                    to={`${ARCHIVE_REPO_URL}/blob/master/metadata/${id}.yml`}
                     target="_blank"
                     title="查看此文件在 GitHub 上的元信息"
                     className={cn(
@@ -145,7 +147,7 @@ function ItemCover(
                             })
                                 .then((res: Response) => {
                                     if (res.type === 'opaqueredirect') {
-                                        if (location.origin === "https://byrdocs.org") {
+                                        if (location.origin === SITE_BASE_URL) {
                                             toast("网络环境错误，请刷新以登录", {
                                                 description: "您当前的网络似乎不是北邮校园网，我们需要登录来认证您的身份",
                                                 duration: 100000,
@@ -164,7 +166,7 @@ function ItemCover(
                                                 action: {
                                                     label: "跳转",
                                                     onClick: () => {
-                                                        location.href = location.href.replace(location.origin, "https://byrdocs.org")
+                                                        location.href = location.href.replace(location.origin, SITE_BASE_URL)
                                                     }
                                                 },
                                                 cancel: {
@@ -205,10 +207,10 @@ function ItemCover(
 function ItemTitle({ children, filename, href }: { children: React.ReactNode, filename: string, href: string }) {
     const url = new URL(href, location.origin)
     let external = url.origin !== location.origin
-    if (url.origin === "https://byrdocs.org") {
+    if (url.origin === SITE_BASE_URL) {
         url.searchParams.set("filename", filename)
         url.searchParams.set("f", "1")
-        if (!location.origin.endsWith("byrdocs-frontend.pages.dev")) {
+        if (!location.origin.endsWith(DEV_SITE_BASE_URL)) {
             url.protocol = location.protocol
             url.hostname = location.hostname
             url.port = location.port

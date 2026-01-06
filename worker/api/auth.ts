@@ -4,10 +4,11 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { setCookie } from '..';
 import { byrdocs_login } from '@byrdocs/bupt-auth';
+import { PUBLISH_SITE_BASE_URL } from '../site-config';
 
 const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {
     "byrdocs-publish": {
-        "redirect_uri": "https://publish.byrdocs.org/callback"
+        "redirect_uri": `${PUBLISH_SITE_BASE_URL}/callback`
     }
 }
 

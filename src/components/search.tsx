@@ -20,6 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { TabItem, TabList } from "./tab"
 import { EmptySearchList, SearchList } from "./search-list"
 import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
+//import { DATA_BASE_URL } from "../site-config.ts"
 
 const DEBOUNCE_TIME = 500;
 let wiki_id = 0;
@@ -138,10 +139,10 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
 
         input.current?.focus()
 
-        const wiki_req = fetch("https://files.byrdocs.org/wiki.json")
+        const wiki_req = fetch(`/schema/wiki.json`)
             .then(res => res.json())
 
-        fetch("https://files.byrdocs.org/metadata2.json")
+        fetch(`/schema/metadata.json`)
             .then(res => res.json())
             .then((docs_raw_data: Item[]) => {
                 const data = docs_raw_data.map(initItem)
