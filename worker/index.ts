@@ -9,7 +9,6 @@ import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from './generated/prisma/client';
 import { isBupt, sign } from './utils';
 export { OAuth } from './objects/oauth';
-import { SITE_BASE_URL, DATA_BASE_URL } from './site-config';
 
 export async function setCookie(c: Context) {
     await setSignedCookie(c, "login", Date.now().toString(), c.env.JWT_SECRET, {
@@ -22,7 +21,7 @@ export async function setCookie(c: Context) {
 
 const app = new Hono<{ Bindings: Cloudflare.Env }>()
     .route("/api", apiRoute)
-    .get("/schema/:path{.*?}", c => fetch(`${DATA_BASE_URL}/${c.req.param("path")}`))
+    .get("/schema/:path{.*?}", c => fetch(`${c.env.DATA_BASE_URL}/${c.req.param("path")}`))
     .get("/files/:path{.*?}", async c => {
         const path = c.req.param("path")
         const isFile = !path.endsWith(".jpg") && !path.endsWith(".webp")
@@ -64,7 +63,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 })
             }
         }
-        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, SITE_BASE_URL))
+        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, c.env.SITE_BASE_URL))
         let res = await caches.default.match(cacheKey)
         if (!res) {
             console.log({

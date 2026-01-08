@@ -20,7 +20,6 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { TabItem, TabList } from "./tab"
 import { EmptySearchList, SearchList } from "./search-list"
 import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
-//import { DATA_BASE_URL } from "../site-config.ts"
 
 const DEBOUNCE_TIME = 500;
 let wiki_id = 0;

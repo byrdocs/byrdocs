@@ -4,13 +4,8 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { setCookie } from '..';
 import { login } from '@byrdocs/bupt-auth';
-import { PUBLISH_SITE_BASE_URL } from '../site-config';
 
-const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {
-    "byrdocs-publish": {
-        "redirect_uri": `${PUBLISH_SITE_BASE_URL}/callback`
-    }
-}
+const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {}
 
 export default new Hono<{
     Bindings: Cloudflare.Env,

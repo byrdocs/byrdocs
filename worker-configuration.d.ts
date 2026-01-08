@@ -13,6 +13,11 @@ declare namespace Cloudflare {
 		R2: R2Bucket;
 		DB: D1Database;
 		AE: AnalyticsEngineDataset;
+		SITE_BASE_URL: string;
+		DATA_BASE_URL: string;
+		PUBLISH_SITE_BASE_URL: string;
+		DEV_SITE_BASE_URL: string;
+		ARCHIVE_REPO_URL: string;
 	}
 }
 interface Env extends Cloudflare.Env {}
