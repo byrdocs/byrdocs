@@ -64,7 +64,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     }
                 )}
             >
-                <Link /*to={`https://${PUBLISH_SITE_BASE_URL}/edit/${id}`}*/ to={`https://publish.byrdocs.org/edit/${id}`} title="编辑此文件的元信息">
+                <Link to={`https://${PUBLISH_SITE_BASE_URL}/edit/${id}`} title="编辑此文件的元信息">
                     <Edit size={11} className="transition-colors cursor-pointer hover:text-muted-foreground/60" />
                 </Link>
                 <div className="inline-block mx-1 border-l-[0.5px] h-3"></div>
@@ -90,8 +90,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     </div>
                 )}
                 <Link
-                    /*to={`${ARCHIVE_REPO_URL}/blob/master/metadata/${id}.yml`}*/
-                    to={`https://github.com/byrdocs/byrdocs-archive/blob/master/metadata/${id}.yml`}
+                    to={`${ARCHIVE_REPO_URL}/blob/master/metadata/${id}.yml`}
                     target="_blank"
                     title="查看此文件在 GitHub 上的元信息"
                     className={cn(
