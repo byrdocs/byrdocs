@@ -236,3 +236,30 @@ export default new Hono<{
             });
         }
     })
+    .delete("/mpu-abort",zValidator(
+        'json',
+        z.object({
+            key: z.string(),
+            uploadId: z.string(),
+        })
+    ),async c=>{
+        const {key,uploadId}=await c.req.valid("json");
+        if(!uploadId){
+            return c.json({
+                error:"缺少 UploadId",
+                success:false,
+            });
+        }
+        try{
+            const multipartUpload=c.env.R2.resumeMultipartUpload(key,uploadId);
+            await multipartUpload.abort();
+        }catch(e){
+            return c.json({
+                error:(e as Error).message||e?.toString()||"未知错误",
+                success:false,
+            });
+        }
+        return c.json({
+            success:true,
+        });
+    })
