@@ -26,7 +26,7 @@ function normalizeOrigin(value: string | undefined): string | null {
 function getAllowedOrigins(env: Cloudflare.Env): Set<string> {
     const origins = [
         normalizeOrigin(env.PUBLISH_SITE_BASE_URL),
-        normalizaOrigin(env.PUBLISH_DEV_SITE_BASE_URL),
+        normalizeOrigin(env.PUBLISH_DEV_SITE_BASE_URL),
     ].filter((origin): origin is string => Boolean(origin));
     return new Set(origins);
 }
