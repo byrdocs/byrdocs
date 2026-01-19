@@ -25,8 +25,8 @@ function normalizeOrigin(value: string | undefined): string | null {
 
 function getAllowedOrigins(env: Cloudflare.Env): Set<string> {
     const origins = [
-        normalizeOrigin(env.PUBLISH_SITE_BASE_URL),
-        normalizeOrigin(env.PUBLISH_DEV_SITE_BASE_URL),
+        normalizeOrigin(env.PUBLISH_SITE_URL),
+        normalizeOrigin(env.PUBLISH_DEV_SITE_URL),
     ].filter((origin): origin is string => Boolean(origin));
     return new Set(origins);
 }
@@ -81,7 +81,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
         }
     })
     .route("/api", apiRoute)
-    .get("/schema/:path{.*?}", c => fetch(`${c.env.DATA_BASE_URL}/${c.req.param("path")}`))
+    .get("/schema/:path{.*?}", c => fetch(`${c.env.R2_DATA_SITE_URL}/${c.req.param("path")}`))
     .get("/files/:path{.*?}", async c => {
         const path = c.req.param("path")
         const isFile = !path.endsWith(".jpg") && !path.endsWith(".webp")
@@ -123,7 +123,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                 })
             }
         }
-        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, c.env.SITE_BASE_URL))
+        const cacheKey = new Request(new URL(new URL(c.req.url).pathname, c.env.BYRDOCS_SITE_URL))
         let res = await caches.default.match(cacheKey)
         if (!res) {
             console.log({

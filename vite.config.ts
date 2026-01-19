@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       global: "globalThis",
-      PUBLISH_SITE_BASE_URL: JSON.stringify(env.PUBLISH_SITE_BASE_URL),
+      PUBLISH_SITE_URL: JSON.stringify(env.PUBLISH_SITE_URL),
       ARCHIVE_REPO_URL: JSON.stringify(env.ARCHIVE_REPO_URL),
     },
     ssr: {
