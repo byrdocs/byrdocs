@@ -139,7 +139,17 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         input.current?.focus()
 
         const wiki_req = fetch(`/schema/wiki.json`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    console.warn("Warning: /schema/wiki.json not found. You cannot get the metadata from wiki.");
+                    return [];
+                }
+                return res.json();
+            })
+            .catch(err => {
+                console.warn("Warning: failed to fetch /schema/wiki.json.", err);
+                return [];
+            });
 
         fetch(`/schema/metadata.json`)
             .then(res => res.json())
