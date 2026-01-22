@@ -64,7 +64,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     }
                 )}
             >
-                <Link to={`https://${PUBLISH_SITE_URL}/edit/${id}`} title="编辑此文件的元信息">
+                <Link to={`${PUBLISH_SITE_URL}/edit/${id}`} title="编辑此文件的元信息">
                     <Edit size={11} className="transition-colors cursor-pointer hover:text-muted-foreground/60" />
                 </Link>
                 <div className="inline-block mx-1 border-l-[0.5px] h-3"></div>
