@@ -14,9 +14,10 @@ declare namespace Cloudflare {
         DB: D1Database;
         AE: AnalyticsEngineDataset;
         BYRDOCS_SITE_URL: string;
+        DEV_SITE_URL: string;
         R2_DATA_SITE_URL: string;
         PUBLISH_SITE_URL: string;
-        DEV_SITE_URL: string;
+        PUBLISH_DEV_SITE_URL: string;
         ARCHIVE_REPO_URL: string;
     }
 }

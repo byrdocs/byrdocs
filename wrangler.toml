@@ -45,9 +45,3 @@ run_worker_first = [
     "/schema/*",
     "/files/*",
 ]
-
-[env.dev]
-# BYR Docs Publish 的域名
-VITE_PUBLISH_SITE_URL = "https://publish.byrdocs.cpphusky.xyz"
-# 你的 byrdocs-archive 对应的 GitHub 仓库
-VITE_ARCHIVE_REPO_URL = "https://github.com/byrdocs/byrdocs-archive-testing"
