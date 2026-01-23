@@ -46,14 +46,8 @@ run_worker_first = [
     "/files/*",
 ]
 
-[vars]
-# 主站网址，也是你为主站设定的自定义域名，见下文第12步
-BYRDOCS_SITE_URL = "https://byrdocs.cpphusky.xyz"
-# byrdocs-data 存储桶的自定义域名，见“准备 BYR Docs 文件”第7步
-R2_DATA_SITE_URL = "https://data.byrdocs.cpphusky.xyz"
+[env.dev]
 # BYR Docs Publish 的域名
-PUBLISH_SITE_URL = "https://publish.byrdocs.cpphusky.xyz"
-# 测试用的网站域名
-DEV_SITE_URL = "https://byrdocs.cpphusky.workers.dev"
+VITE_PUBLISH_SITE_URL = "https://publish.byrdocs.cpphusky.xyz"
 # 你的 byrdocs-archive 对应的 GitHub 仓库
-ARCHIVE_REPO_URL = "https://github.com/byrdocs/byrdocs-archive-testing"
+VITE_ARCHIVE_REPO_URL = "https://github.com/byrdocs/byrdocs-archive-testing"

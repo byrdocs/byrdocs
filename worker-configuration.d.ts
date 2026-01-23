@@ -17,7 +17,6 @@ declare namespace Cloudflare {
         R2_DATA_SITE_URL: string;
         PUBLISH_SITE_URL: string;
         DEV_SITE_URL: string;
-        PUBLISH_DEV_SITE_URL: string;
         ARCHIVE_REPO_URL: string;
     }
 }
