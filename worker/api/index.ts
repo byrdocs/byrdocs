@@ -17,7 +17,7 @@ export default new Hono<{
     .route('/file', fileRoutes)
     .get('/rank', async (c) => {
         const token = c.req.query('token');
-        if (token !== c.env.TOKEN) {
+        if (token !== c.env.BYRDOCS_SITE_TOKEN) {
             return c.json({ error: 'Forbidden' }, { status: 403 });
         }
         const id: DurableObjectId = c.env.COUNTER.idFromName('counter');

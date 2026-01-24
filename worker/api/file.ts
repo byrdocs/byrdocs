@@ -8,7 +8,7 @@ export default new Hono<{
     Bindings: Cloudflare.Env
 }>()
     .use(async (c, next) => {
-        if (c.req.header("Authorization") !== "Bearer " + c.env.TOKEN) {
+        if (c.req.header("Authorization") !== "Bearer " + c.env.BYRDOCS_SITE_TOKEN) {
             return c.json({ error: "无效的 Token", success: false }, { status: 401 })
         }
         await next()

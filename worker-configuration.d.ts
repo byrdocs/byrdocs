@@ -4,7 +4,7 @@
 declare namespace Cloudflare {
     interface Env {
         JWT_SECRET: string;
-        TOKEN: string;
+        BYRDOCS_SITE_TOKEN: string;
         GITHUB_CLIENT_ID: string;
         GITHUB_CLIENT_SECRET: string;
         OCR_TOKEN: string;

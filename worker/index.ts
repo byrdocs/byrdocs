@@ -92,7 +92,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const cookie = await getSignedCookie(c, c.env.JWT_SECRET, "login")
             if (
                 (!isBupt(c.req.raw.cf)) &&
-                token !== c.env.TOKEN &&
+                token !== c.env.BYRDOCS_SITE_TOKEN &&
                 (!cookie || isNaN(parseInt(cookie)) || Date.now() - parseInt(cookie) > 2592000 * 1000)
             ) {
                 const toq = new URL(c.req.url).searchParams
