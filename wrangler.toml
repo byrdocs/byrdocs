@@ -21,11 +21,6 @@ new_classes = [
 [observability]
 enabled = true
 
-[[d1_databases]]
-binding = "DB"
-database_name = "byrdocs"
-database_id = "2df6319f-9c5f-4e3f-9958-3d0ab5f7825b"
-
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "byrdocs-file"
@@ -45,3 +40,8 @@ run_worker_first = [
     "/schema/*",
     "/files/*",
 ]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "byrdocs"
+database_id = "f001c836-27e9-40c0-9ecd-42d31534bfb9"
