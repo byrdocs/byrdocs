@@ -44,4 +44,4 @@ run_worker_first = [
 [[d1_databases]]
 binding = "DB"
 database_name = "byrdocs"
-database_id = "f001c836-27e9-40c0-9ecd-42d31534bfb9"
+database_id = "30be21ad-59ce-4360-b327-634722a9694f"
