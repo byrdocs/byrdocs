@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import authRoutes from './auth';
-import s3Routes from './s3';
+import r2Routes from './r2';
 import fileRoutes from './file';
 import { isBupt } from '../utils';
 import { login } from '@byrdocs/bupt-auth';
@@ -13,11 +13,11 @@ export default new Hono<{
 }>()
     .get('/ping', (c) => c.text('pong'))
     .route('/auth', authRoutes)
-    .route('/s3', s3Routes)
+    .route('/r2', r2Routes)
     .route('/file', fileRoutes)
     .get('/rank', async (c) => {
         const token = c.req.query('token');
-        if (token !== c.env.TOKEN) {
+        if (token !== c.env.BYRDOCS_SITE_TOKEN) {
             return c.json({ error: 'Forbidden' }, { status: 403 });
         }
         const id: DurableObjectId = c.env.COUNTER.idFromName('counter');

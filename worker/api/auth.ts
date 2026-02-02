@@ -5,11 +5,7 @@ import { z } from 'zod'
 import { setCookie } from '..';
 import { login } from '@byrdocs/bupt-auth';
 
-const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {
-    "byrdocs-publish": {
-        "redirect_uri": "https://publish.byrdocs.org/callback"
-    }
-}
+const OAUTH_SERVICES: Record<string, { redirect_uri: string }> = {}
 
 export default new Hono<{
     Bindings: Cloudflare.Env,

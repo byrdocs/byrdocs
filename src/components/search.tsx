@@ -138,10 +138,20 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
 
         input.current?.focus()
 
-        const wiki_req = fetch("https://files.byrdocs.org/wiki.json")
-            .then(res => res.json())
+        const wiki_req = fetch(`/schema/wiki.json`)
+            .then(res => {
+                if (!res.ok) {
+                    console.warn("Warning: /schema/wiki.json not found. You cannot get the metadata from wiki.");
+                    return [];
+                }
+                return res.json();
+            })
+            .catch(err => {
+                console.warn("Warning: failed to fetch /schema/wiki.json.", err);
+                return [];
+            });
 
-        fetch("https://files.byrdocs.org/metadata2.json")
+        fetch(`/schema/metadata.json`)
             .then(res => res.json())
             .then((docs_raw_data: Item[]) => {
                 const data = docs_raw_data.map(initItem)

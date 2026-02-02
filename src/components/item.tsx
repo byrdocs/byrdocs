@@ -20,8 +20,7 @@ import { EnlargeIcon, ExternalIcon } from "./icons";
 import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
 
-const origin = location.hostname.endsWith("byrdocs-frontend.pages.dev") ? "https://byrdocs.org" : "";
-const url = (_type: string, md5: string, filetype: string) => `${origin}/files/${md5}.${filetype}`;
+const url = (_type: string, md5: string, filetype: string) => `/files/${md5}.${filetype}`;
 const preview_url = (md5: string, filename: string) => {
     const base_url = url("preview", md5, "pdf");
     const searchParams = new URLSearchParams();
@@ -29,7 +28,7 @@ const preview_url = (md5: string, filename: string) => {
     searchParams.set("f", "2");
     return `${base_url}?${searchParams.toString()}`;
 }
-const thumbnail_url = (md5: string) => `${origin}/files/${md5}.webp`;
+const thumbnail_url = (md5: string) => `/files/${md5}.webp`;
 
 function Preview() {
     return (
@@ -65,7 +64,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     }
                 )}
             >
-                <Link to={`https://publish.byrdocs.org/edit/${id}`} title="编辑此文件的元信息">
+                <Link to={`${PUBLISH_SITE_URL}/edit/${id}`} title="编辑此文件的元信息">
                     <Edit size={11} className="transition-colors cursor-pointer hover:text-muted-foreground/60" />
                 </Link>
                 <div className="inline-block mx-1 border-l-[0.5px] h-3"></div>
@@ -91,7 +90,7 @@ function ItemCard({ id, children, onPreview, canPreview }: { id?: string, childr
                     </div>
                 )}
                 <Link
-                    to={`https://github.com/byrdocs/byrdocs-archive/blob/master/metadata/${id}.yml`}
+                    to={`${ARCHIVE_REPO_URL}/blob/master/metadata/${id}.yml`}
                     target="_blank"
                     title="查看此文件在 GitHub 上的元信息"
                     className={cn(
@@ -145,34 +144,17 @@ function ItemCover(
                             })
                                 .then((res: Response) => {
                                     if (res.type === 'opaqueredirect') {
-                                        if (location.origin === "https://byrdocs.org") {
-                                            toast("网络环境错误，请刷新以登录", {
-                                                description: "您当前的网络似乎不是北邮校园网，我们需要登录来认证您的身份",
-                                                duration: 100000,
-                                                dismissible: false,
-                                                action: {
-                                                    label: "登录",
-                                                    onClick: () => {
-                                                        location.reload();
-                                                    }
-                                                },
-                                            })
-                                        } else {
-                                            toast("网络环境错误", {
-                                                description: "您可以切换到校园网环境，或者访问正式版网站。",
-                                                duration: 100000,
-                                                action: {
-                                                    label: "跳转",
-                                                    onClick: () => {
-                                                        location.href = location.href.replace(location.origin, "https://byrdocs.org")
-                                                    }
-                                                },
-                                                cancel: {
-                                                    label: "关闭",
-                                                    onClick: () => { }
+                                        toast("网络环境错误，请刷新以登录", {
+                                            description: "您当前的网络似乎不是北邮校园网，我们需要登录来认证您的身份",
+                                            duration: 100000,
+                                            dismissible: false,
+                                            action: {
+                                                label: "登录",
+                                                onClick: () => {
+                                                    location.reload();
                                                 }
-                                            })
-                                        }
+                                            },
+                                        })
                                     }
                                 })
                         }
@@ -202,18 +184,11 @@ function ItemCover(
     );
 }
 
-function ItemTitle({ children, filename, href }: { children: React.ReactNode, filename: string, href: string }) {
+function ItemTitle({ children, filename, href, external }: { children: React.ReactNode, filename: string, href: string, external: boolean }) {
     const url = new URL(href, location.origin)
-    let external = url.origin !== location.origin
-    if (url.origin === "https://byrdocs.org") {
+    if (!external) {
         url.searchParams.set("filename", filename)
         url.searchParams.set("f", "1")
-        if (!location.origin.endsWith("byrdocs-frontend.pages.dev")) {
-            url.protocol = location.protocol
-            url.hostname = location.hostname
-            url.port = location.port
-        }
-        external = false
     }
     return (
         <h3 className="md:text-2xl font-bold mb-1">
@@ -335,6 +310,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                 <ItemTitle
                                     filename={`${item.data.title}.${item.data.filetype}`}
                                     href={item.url}
+                                    external={false}
                                 >
                                     {item.data.title}
                                 </ItemTitle>
@@ -417,6 +393,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     <ItemTitle
                                         filename={`${item.data.title}.${item.data.filetype}`}
                                         href={item.url}
+                                        external={item.data.filetype!=='pdf'}
                                     >
                                         {item.data.title}
                                     </ItemTitle>
@@ -488,6 +465,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                         <ItemTitle
                                             filename={`${item.data.title}.${item.data.filetype}`}
                                             href={item.url}
+                                            external={false}
                                         >
                                             {item.data.title}
                                         </ItemTitle>

@@ -1,0 +1,47 @@
+"$schema" = "node_modules/wrangler/config-schema.json"
+name = "byrdocs"
+main = "worker/index.ts"
+compatibility_date = "2025-08-31"
+
+[[durable_objects.bindings]]
+name = "COUNTER"
+class_name = "Counter"
+
+[[durable_objects.bindings]]
+name = "OAUTH"
+class_name = "OAuth"
+
+[[migrations]]
+tag = "v1"
+new_classes = [
+    "Counter",
+    "OAuth",
+]
+
+[observability]
+enabled = true
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "byrdocs-file"
+preview_bucket_name = "byrdocs-file"
+
+[[analytics_engine_datasets]]
+binding = "AE"
+dataset = "byrdocs"
+
+[triggers]
+crons = ["0 0 * * *"]
+
+[assets]
+not_found_handling = "single-page-application"
+run_worker_first = [
+    "/api/*",
+    "/schema/*",
+    "/files/*",
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "byrdocs"
+database_id = "f001c836-27e9-40c0-9ecd-42d31534bfb9"
