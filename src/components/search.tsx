@@ -53,7 +53,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const input = useRef<HTMLInputElement>(null)
     const [showClear, setShowClear] = useState(q !== "")
     const showedTip = useRef(false)
-    const [active, setActive] = useState<CategoryType>(type as CategoryType ?? 'all')
+    const [active, setActive] = useState<CategoryType>(type as CategoryType ?? 'book')
     const [inputFixed, setInputFixed] = useState(false)
     const relative = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
@@ -88,7 +88,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     function reset() {
         setTop(false)
         setKeyword("")
-        setActive("all")
+        setActive("book")
         input.current?.focus()
         setShowClear(false)
         navigate("/")
@@ -105,7 +105,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         if (type) {
             setActive(type as CategoryType)
         } else {
-            setActive("all")
+            setActive("book")
         }
     }, [q, type])
 
@@ -338,10 +338,9 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                             setActive(select as CategoryType)
                                             setQuery(new URLSearchParams({ c: select, q: keyword }))
                                         }} active={active}>
-                                            <TabItem value="all">全部</TabItem>
-                                            <TabItem value="book">书籍</TabItem>
-                                            <TabItem value="test">试卷</TabItem>
-                                            <TabItem value="doc">资料</TabItem>
+                                            <TabItem value="book"><b>书籍</b></TabItem>
+                                            <TabItem value="test"><b>试卷</b></TabItem>
+                                            <TabItem value="doc"><b>资料</b></TabItem>
                                         </TabList>
                                     </div>
                                     <div className="items-end hidden md:block py-1">
