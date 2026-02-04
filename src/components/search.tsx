@@ -22,7 +22,42 @@ import { EmptySearchList, SearchList } from "./search-list"
 import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
 
 const DEBOUNCE_TIME = 500;
+const TAB_COOKIE_NAME = "search:tab";
+const TAB_COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const TAB_VALUES = ["book", "test", "doc"] as const;
+const CATEGORY_VALUES = [...TAB_VALUES, "all"] as const;
 let wiki_id = 0;
+
+type TabValue = (typeof TAB_VALUES)[number];
+type CategoryValue = (typeof CATEGORY_VALUES)[number];
+
+function isTabValue(value: string | null): value is TabValue {
+    return !!value && TAB_VALUES.includes(value as TabValue);
+}
+
+function isCategoryValue(value: string | null): value is CategoryValue {
+    return !!value && CATEGORY_VALUES.includes(value as CategoryValue);
+}
+
+function getCookieValue(name: string): string | null {
+    if (typeof document === "undefined") return null;
+    const match = document.cookie
+        .split(";")
+        .map((entry) => entry.trim())
+        .find((entry) => entry.startsWith(`${name}=`));
+    if (!match) return null;
+    return decodeURIComponent(match.slice(name.length + 1));
+}
+
+function getTabCookie(): TabValue | null {
+    const value = getCookieValue(TAB_COOKIE_NAME);
+    return isTabValue(value) ? value : null;
+}
+
+function setTabCookie(value: TabValue) {
+    if (typeof document === "undefined") return;
+    document.cookie = `${TAB_COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${TAB_COOKIE_MAX_AGE}`;
+}
 
 
 function initItem(item: Item) {
@@ -53,7 +88,10 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const input = useRef<HTMLInputElement>(null)
     const [showClear, setShowClear] = useState(q !== "")
     const showedTip = useRef(false)
-    const [active, setActive] = useState<CategoryType>(type as CategoryType ?? 'book')
+    const [active, setActive] = useState<CategoryType>(() => {
+        if (isCategoryValue(type)) return type as CategoryType;
+        return getTabCookie() ?? "book";
+    })
     const [inputFixed, setInputFixed] = useState(false)
     const relative = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
@@ -89,6 +127,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         setTop(false)
         setKeyword("")
         setActive("book")
+        setTabCookie("book")
         input.current?.focus()
         setShowClear(false)
         navigate("/")
@@ -102,12 +141,22 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
             setKeyword("")
             setSearching(false)
         }
-        if (type) {
+    }, [q])
+
+    useEffect(() => {
+        if (isCategoryValue(type)) {
             setActive(type as CategoryType)
+            if (isTabValue(type)) setTabCookie(type)
+            return
+        }
+        const cookieTab = getTabCookie()
+        if (cookieTab) {
+            setActive(cookieTab)
         } else {
             setActive("book")
+            setTabCookie("book")
         }
-    }, [q, type])
+    }, [type])
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
