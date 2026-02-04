@@ -338,9 +338,9 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                             setActive(select as CategoryType)
                                             setQuery(new URLSearchParams({ c: select, q: keyword }))
                                         }} active={active}>
-                                            <TabItem value="book"><b>书籍</b></TabItem>
-                                            <TabItem value="test"><b>试卷</b></TabItem>
-                                            <TabItem value="doc"><b>资料</b></TabItem>
+                                            <TabItem value="book">书籍</TabItem>
+                                            <TabItem value="test">试卷</TabItem>
+                                            <TabItem value="doc">资料</TabItem>
                                         </TabList>
                                     </div>
                                     <div className="items-end hidden md:block py-1">
