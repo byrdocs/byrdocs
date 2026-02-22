@@ -90,7 +90,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const showedTip = useRef(false)
     const [active, setActive] = useState<CategoryType>(() => {
         if (isCategoryValue(type)) return type as CategoryType;
-        return getTabCookie() ?? "book";
+        return getTabCookie() ?? "test";
     })
     const [inputFixed, setInputFixed] = useState(false)
     const relative = useRef<HTMLDivElement>(null)
@@ -126,8 +126,8 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     function reset() {
         setTop(false)
         setKeyword("")
-        setActive("book")
-        setTabCookie("book")
+        setActive("test")
+        setTabCookie("test")
         input.current?.focus()
         setShowClear(false)
         navigate("/")
@@ -153,8 +153,8 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         if (cookieTab) {
             setActive(cookieTab)
         } else {
-            setActive("book")
-            setTabCookie("book")
+            setActive("test")
+            setTabCookie("test")
         }
     }, [type])
 
@@ -387,8 +387,8 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                             setActive(select as CategoryType)
                                             setQuery(new URLSearchParams({ c: select, q: keyword }))
                                         }} active={active}>
-                                            <TabItem value="book">书籍</TabItem>
                                             <TabItem value="test">试卷</TabItem>
+                                            <TabItem value="book">书籍</TabItem>
                                             <TabItem value="doc">资料</TabItem>
                                         </TabList>
                                     </div>
