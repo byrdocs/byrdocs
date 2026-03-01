@@ -319,9 +319,13 @@ export function SearchList({
                         <div className="mb-4">没有找到相关结果</div>
                         <div className="text-xs sm:text-base mb-2">注意使用全称搜索，例如“高等数学”而非“高数”</div>
                         <hr />
-                        <div className="text-xs sm:text-base mt-2">
-                            已有文件？<a className="text-blue-500 hover:text-blue-400" target="_blank" href="https://github.com/byrdocs/byrdocs-archive/blob/master/CONTRIBUTING.md">上传到 BYR Docs</a>
-                        </div>
+                        {category=="book"?
+                            <div className="text-xs sm:text-base mt-2">
+                                没有找到想要的书？<a className="text-blue-500 hover:text-blue-400" target="_blank" href="https://github.com/orgs/byrdocs/discussions/2">去电子书愿望单</a>
+                            </div>:<div className="text-xs sm:text-base mt-2">
+                                已有文件？<a className="text-blue-500 hover:text-blue-400" target="_blank" href="https://github.com/byrdocs/byrdocs-archive/blob/master/CONTRIBUTING.md">上传到 BYR Docs</a>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
