@@ -312,6 +312,15 @@ export function SearchList({
                 {(filterdResults.slice(0, pageSize)).map((item, index) => (
                     <ItemDisplay key={item.id} item={item as unknown as Item} index={index} onPreview={onPreview} />
                 ))}
+                {filterdResults.length <=pageSize ?
+                    <>
+                        <hr />
+                        <div className="text-center text-xs sm:text-base mt-2">
+                            没有找到想要的书？<a className="text-blue-500 hover:text-blue-400" target="_blank" href="https://github.com/orgs/byrdocs/discussions/2">去电子书愿望单</a>
+                        </div>
+                    </>
+                    :null
+                }
             </>
             : <div className="text-center text-muted-foreground p-0 md:p-5 flex h-[40vh]">
                 <div className="text-xl sm:text-2xl font-light m-auto ">
