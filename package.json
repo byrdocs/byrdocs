@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@byrdocs/bupt-auth": "npm:@jsr/byrdocs__bupt-auth@^0.2.1",
-    "@fontsource-variable/saira": "^5.2.6",
+    "@fontsource-variable/saira": "^5.2.8",
     "@hono/zod-validator": "^0.7.2",
     "@prisma/adapter-d1": "^6.15.0",
     "@prisma/client": "6.15.0",
