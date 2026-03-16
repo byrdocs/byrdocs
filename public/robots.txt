@@ -5,3 +5,5 @@ Disallow: /login/
 Disallow: /auth/
 Allow: /
 Allow: /about/
+
+Sitemap: https://byrdocs.org/sitemap.xml
