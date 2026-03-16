@@ -1,3 +1,5 @@
+import { Context } from "hono";
+
 export function chunk<T>(array: T[], size: number): T[][] {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
@@ -16,17 +18,17 @@ export async function sign(env: Cloudflare.Env, path: string, headers: Headers):
             etagDoesNotMatch: headers.get("if-none-match") || undefined,
         }
     });
-    
+
     if (!object) {
         return new Response("Object Not Found", {
             status: 404
         });
     }
-    
+
     const responseHeaders = new Headers();
     object.writeHttpMetadata(responseHeaders);
     responseHeaders.set("etag", object.httpEtag);
-    
+
     // Check if we got the body (R2ObjectBody) or just metadata (R2Object)
     if (!('body' in object)) {
         // Conditional request didn't match, return 304 Not Modified or 412 Precondition Failed
@@ -35,7 +37,7 @@ export async function sign(env: Cloudflare.Env, path: string, headers: Headers):
             headers: responseHeaders
         });
     }
-    
+
     if (range && object.range) {
         const rangeData = object.range as { offset: number, length?: number };
         const length = rangeData.length || (object.size - rangeData.offset);
@@ -45,11 +47,21 @@ export async function sign(env: Cloudflare.Env, path: string, headers: Headers):
             headers: responseHeaders
         });
     }
-    
+
     return new Response(object.body, { headers: responseHeaders });
 }
 
 
 export function isBupt(cf?: CfProperties): boolean {
     return cf ? (cf.asn === 24350 || cf.asn === 4538) : false;
+}
+
+export function isSearchEngineBot(c: Context): boolean {
+    const ua = c.req.header("User-Agent") || "";
+    const bots = ["googlebot", "bingbot", "yandexbot", "baiduspider", "duckduckbot", "slurp", "sogou"];
+    return bots.some(bot => ua.includes(bot));
+}
+
+export function isMD5(str: string): boolean {
+    return /^[a-f0-9]{32}$/i.test(str);
 }

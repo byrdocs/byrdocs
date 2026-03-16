@@ -15,7 +15,20 @@ process.env.VITE_GIT_LAST_COMMIT_MESSAGE = lastCommitMessage;
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
-    plugins: [react(), cloudflare()],
+    plugins: [react({
+      plugins: [],
+      useAtYourOwnRisk_mutateSwcOptions(options) {
+        const filename = options.filename ?? '';
+        const isWorkerSource =
+          filename.includes('/worker/') || filename.includes('\\worker\\');
+
+        if (!options.jsc?.transform?.react) return;
+
+        options.jsc.transform.react.importSource = isWorkerSource
+          ? 'hono/jsx'
+          : 'react';
+      },
+    }), cloudflare()],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),

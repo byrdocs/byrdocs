@@ -138,20 +138,20 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
 
         input.current?.focus()
 
-        const wiki_req = fetch(`/schema/wiki.json`)
+        const wiki_req = fetch(`/data/wiki.json`)
             .then(res => {
                 if (!res.ok) {
-                    console.warn("Warning: /schema/wiki.json not found. You cannot get the metadata from wiki.");
+                    console.warn("Warning: /data/wiki.json not found. You cannot get the metadata from wiki.");
                     return [];
                 }
                 return res.json();
             })
             .catch(err => {
-                console.warn("Warning: failed to fetch /schema/wiki.json.", err);
+                console.warn("Warning: failed to fetch /data/wiki.json.", err);
                 return [];
             });
 
-        fetch(`/schema/metadata.json`)
+        fetch(`/data/metadata.json`)
             .then(res => res.json())
             .then((docs_raw_data: Item[]) => {
                 const data = docs_raw_data.map(initItem)

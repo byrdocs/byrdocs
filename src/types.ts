@@ -1,4 +1,5 @@
 
+export type MetaData = Array<BookItem | DocItem | TestItem>
 export type Item = BookItem | DocItem | TestItem | WikiTestItem
 export type CategoryType = Item['type'] | 'all'
 

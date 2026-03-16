@@ -54,7 +54,7 @@
     "cmdk": "1.1.1",
     "core-js": "^3.45.1",
     "fast-xml-parser": "^5.2.5",
-    "hono": "^4.9.5",
+    "hono": "^4.12.8",
     "is-in-subnet": "^4.0.1",
     "jieba-wasm": "^2.2.0",
     "lucide-react": "^0.507.0",
