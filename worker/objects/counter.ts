@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
-export class Counter<T> extends DurableObject {
+export class Counter<T extends Env> extends DurableObject {
     storage: DurableObjectStorage;
     constructor(ctx: DurableObjectState, env: T) {
         super(ctx, env);
