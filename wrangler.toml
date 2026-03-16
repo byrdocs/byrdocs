@@ -42,6 +42,7 @@ run_worker_first = [
     "/schema/*",
     "/data/*",
     "/files/*",
+    "/sitemap.xml",
 ]
 
 [[d1_databases]]

@@ -105,6 +105,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
         }
     })
     .route("/api", apiRoute)
+    .get("/sitemap.xml", c => fetch(`${c.env.R2_DATA_SITE_URL}/sitemap.xml`))
     .get("/data/:path{.*?}", c => fetch(`${c.env.R2_DATA_SITE_URL}/${c.req.param("path")}`))
     .get("/schema/:path{.*?}", c => fetch(`${c.env.R2_DATA_SITE_URL}/${c.req.param("path")}`))
     .get("/files/:path{.*?}", async c => {
