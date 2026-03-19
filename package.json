@@ -53,7 +53,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.1.1",
     "core-js": "^3.45.1",
-    "fast-xml-parser": "^5.2.5",
+    "fast-xml-parser": "^5.5.6",
     "hono": "4.9.5",
     "is-in-subnet": "^4.0.1",
     "jieba-wasm": "^2.2.0",
