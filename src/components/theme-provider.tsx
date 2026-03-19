@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from "react"
+import { createContext, useContext } from "react"
 
 type Theme = "dark" | "light" | "system"
 
@@ -24,26 +24,6 @@ export function ThemeProvider({
   children,
   ...props
 }: ThemeProviderProps) {
-
-  useEffect(() => {
-    const root = window.document.documentElement
-
-    function update() {
-      const theme = window.matchMedia("(prefers-color-scheme: dark)")
-      const systemTheme = theme.matches
-        ? "dark"
-        : "light"
-
-      root.classList.remove("light", "dark")
-      root.classList.add(systemTheme)
-    }
-    update()
-    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update)
-    return () => {
-      window.matchMedia("(prefers-color-scheme: dark)").removeEventListener("change", update)
-    }
-  }, [])
-
   const value = {
     theme: "system" as Theme,
     setTheme: () => {},

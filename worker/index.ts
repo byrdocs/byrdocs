@@ -7,36 +7,13 @@ export { Counter } from './objects/counter';
 import apiRoute from './api';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from './generated/prisma/client';
-import { isBupt, isMD5, isSearchEngineBot, sign } from './utils';
-import { SearchPage } from './detail';
-import { Item, MetaData, WikiTestItem } from '../src/types';
+import { isBupt, isMD5, sign } from './utils';
+import { normalizeCategoryType, renderMd5SsrPage } from './ssr';
 export { OAuth } from './objects/oauth';
 
 const CORS_ALLOW_HEADERS = 'Authorization, Content-Type, X-Byrdocs-Token';
 const CORS_ALLOW_METHODS = 'GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS';
 const CORS_MAX_AGE = '86400';
-
-function initSearchItem<T extends Item | WikiTestItem>(item: T, wikiId: number): T {
-    if (item.type !== 'test') return item;
-
-    const time = item.data.time.start === item.data.time.end
-        ? item.data.time.start
-        : `${item.data.time.start}-${item.data.time.end}`;
-
-    item.data.title = `${time}${item.data.time.semester === 'First'
-        ? ' 第一学期'
-        : item.data.time.semester === 'Second'
-            ? ' 第二学期'
-            : ''} ${item.data.course.name}${item.data.time.stage ? ' ' + item.data.time.stage : ''}${item.data.content.length === 1 && item.data.content[0] === '答案'
-        ? '答案'
-        : '试卷'}`;
-
-    if (item.data.filetype === 'wiki') {
-        item.id = `wiki-${wikiId}`;
-    }
-
-    return item;
-}
 
 function normalizeOrigin(value: string | undefined): string | null {
     if (!value) return null;
@@ -109,6 +86,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
     .get("/data/:path{.*?}", c => fetch(`${c.env.R2_DATA_SITE_URL}/${c.req.param("path")}`))
     .get("/schema/:path{.*?}", c => fetch(`${c.env.R2_DATA_SITE_URL}/${c.req.param("path")}`))
     .get("/files/:path{.*?}", async c => {
+        const defaultCache = (globalThis.caches as CacheStorage & { default: Cache }).default
         const path = c.req.param("path")
         const isFile = !path.endsWith(".jpg") && !path.endsWith(".webp")
         const filename = c.req.query("filename")
@@ -150,7 +128,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             }
         }
         const cacheKey = new Request(new URL(new URL(c.req.url).pathname, c.env.BYRDOCS_SITE_URL))
-        let res = await caches.default.match(cacheKey)
+        let res = await defaultCache.match(cacheKey)
         if (!res) {
             console.log({
                 type: "cache",
@@ -180,7 +158,7 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const cacheValue = res.clone()
             cacheValue.headers.set("Cache-Control", "public, s-maxage=31536000, max-age=31536000, immutable")
             cacheValue.headers.delete("Set-Cookie")
-            await caches.default.put(cacheKey, cacheValue)
+            await defaultCache.put(cacheKey, cacheValue)
             console.log({
                 type: "cache",
                 status: "set",
@@ -192,40 +170,15 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
     })
     .get('/', async c => {
         const q = c.req.query("q")
-        if (q && isSearchEngineBot(c) && isMD5(q)) {
-            const metadata = await fetch(`${c.env.R2_DATA_SITE_URL}/metadata.json`)
-            const metadata_json = await metadata.json() as MetaData
-            const matched = metadata_json.find((item) => item.id === q)
-            if (!matched) {
-                return c.notFound()
-            }
-
-            let wikiId = 0
-            let item: Item | WikiTestItem = initSearchItem(structuredClone(matched), ++wikiId)
-
-            if (matched.type === 'test' && item.type === 'test' && item.data.filetype === 'pdf') {
-                try {
-                    const wikiResponse = await fetch(`${c.env.R2_DATA_SITE_URL}/wiki.json`)
-                    if (wikiResponse.ok) {
-                        const wikiJson = await wikiResponse.json() as WikiTestItem[]
-                        const wikiMatched = wikiJson.find((wikiItem) => wikiItem.id === q)
-                        if (wikiMatched) {
-                            item.data.wiki = {
-                                url: wikiMatched.url,
-                                data: initSearchItem(structuredClone(wikiMatched), ++wikiId).data,
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.warn('Failed to fetch wiki metadata for SEO page', error)
-                }
-            }
-
-            return c.html(SearchPage({
-                item,
+        if (q && isMD5(q)) {
+            return renderMd5SsrPage({
+                category: normalizeCategoryType(c.req.query("c")),
+                env: c.env,
+                executionCtx: c.executionCtx,
+                md5: q,
                 pageUrl: c.req.url,
-                siteUrl: c.env.BYRDOCS_SITE_URL,
-            }))
+                request: c.req.raw,
+            })
         }
         const target = new URL(c.req.url)
         target.pathname = "/"

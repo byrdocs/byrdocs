@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { lazy } from 'react'
 import ReactDOM from 'react-dom/client'
+import { hydrateRoot } from 'react-dom/client'
 
 import {
   createBrowserRouter,
@@ -12,8 +13,7 @@ import { Toaster } from "@/components/ui/sonner"
 import Notfound from './pages/Notfound';
 import Home from './pages/Home';
 import Loading from './components/loading';
-
-import './index.css'
+import { SsrProvider, readSsrBootstrap } from './ssr-context';
 
 const About = lazy(() => import('./pages/About'))
 const Callback = lazy(() => import('./pages/Callback'))
@@ -62,11 +62,22 @@ const router = createBrowserRouter([
   }
 ]);
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')!
+const bootstrap = readSsrBootstrap()
+
+const app = (
   <React.StrictMode>
-    <ThemeProvider defaultTheme="system">
-      <RouterProvider router={router} />
-      <Toaster position="bottom-center" richColors={true} />
-    </ThemeProvider>
+    <SsrProvider value={bootstrap}>
+      <ThemeProvider defaultTheme="system">
+        <RouterProvider router={router} />
+        <Toaster position="bottom-center" richColors={true} />
+      </ThemeProvider>
+    </SsrProvider>
   </React.StrictMode>
 )
+
+if (rootElement.hasChildNodes()) {
+  hydrateRoot(rootElement, app)
+} else {
+  ReactDOM.createRoot(rootElement).render(app)
+}

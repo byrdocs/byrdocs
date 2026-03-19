@@ -1,4 +1,4 @@
-import { Item, TestItem } from "@/types"
+import { Item } from "@/types"
 import { useEffect, useRef, useState, use } from "react"
 import { ItemDisplay } from "./item"
 import MiniSearch from "minisearch"
@@ -7,6 +7,15 @@ import { Badge } from "@/components/ui/badge"
 import { MultiSelect, MultiSelectOption } from "./ui/multiselect"
 import init, { cut_for_search } from 'jieba-wasm';
 import { cn } from "@/lib/utils"
+import {
+    buildFilterOptions,
+    createExactMatchSearchSnapshot,
+    initialFilter,
+    type FilterType,
+    type SearchSnapshot,
+    type SearchType,
+    sortFilteredResults,
+} from "@/lib/search-snapshot"
 
 const minisearch = new MiniSearch({
     fields: ["data.title", "data.authors", "data.translators", "data.publisher",
@@ -21,16 +30,14 @@ const minisearch = new MiniSearch({
     }
 })
 
-const wasmInit = init('/jieba_rs_wasm_bg_2.2.0.wasm')
+let wasmInit: Promise<unknown> | null = null
 
-const initialFilter = {
-    college: [],
-    course: [],
-    content: [],
-    type: []
+function getWasmInit() {
+    if (!wasmInit) {
+        wasmInit = init('/jieba_rs_wasm_bg_2.2.0.wasm')
+    }
+    return wasmInit
 }
-
-type fileterType = keyof typeof initialFilter
 
 const PAGE_SIZE = 20
 
@@ -44,6 +51,7 @@ export function SearchList({
     showSigma,
     onPreview,
     onSearching,
+    initialSnapshot,
 }: {
     keyword: string
     documents: Item[]
@@ -54,29 +62,35 @@ export function SearchList({
     showSigma: boolean
     onPreview: (url: string) => void
     onSearching: (searching: boolean) => void
+    initialSnapshot?: SearchSnapshot | null
 }) {
-    const [searchResults, setSearchResults] = useState<Item[]>([]);
-    const [filterdResults, setFilterdResults] = useState<Item[]>([]);
+    const [searchResults, setSearchResults] = useState<Item[]>(initialSnapshot?.searchResults ?? []);
+    const [filterdResults, setFilterdResults] = useState<Item[]>(initialSnapshot?.filteredResults ?? []);
     const [miniSearching, setMiniSearching] = useState(false);
-    const [searchType, setSearchType] = useState<'isbn' | 'md5' | 'normal'>('normal')
+    const [searchType, setSearchType] = useState<SearchType>(initialSnapshot?.searchType ?? 'normal')
     const [pageSize, setPageSize] = useState(PAGE_SIZE)
-    const [filter, setFilter] = useState<Record<fileterType, string[]>>(initialFilter)
-    const [filterOptions, setFilterOptions] = useState<Record<fileterType, string[]>>(initialFilter)
+    const [filter, setFilter] = useState<Record<FilterType, string[]>>(initialFilter)
+    const [filterOptions, setFilterOptions] = useState<Record<FilterType, string[]>>(initialSnapshot?.filterOptions ?? initialFilter)
     const listEnd = useRef<HTMLDivElement>(null);
     const [searchTime, setSearchTime] = useState<number | null>(null)
 
-    use(wasmInit);
+    if (typeof window !== "undefined" && detect_search_type(keyword) === "normal") {
+        use(getWasmInit());
+    }
 
     useEffect(() => {
         setPageSize(PAGE_SIZE)
     }, [keyword, documents, searching, category])
 
     useEffect(() => {
+        if (detect_search_type(keyword) !== "normal") {
+            return;
+        }
         minisearch.addAll(documents)
         return () => {
             minisearch.removeAll()
         }
-    }, [documents])
+    }, [documents, keyword])
 
     useEffect(() => {
         function onScroll() {
@@ -99,20 +113,16 @@ export function SearchList({
         onSearching(true)
         setFilter(initialFilter)
 
-        const type = detect_search_type(keyword)
+        const exactMatchSnapshot = createExactMatchSearchSnapshot(keyword, documents, category)
         let results: Item[] = []
 
-        if (type == 'isbn') {
-            setSearchType('isbn')
-            const searchIsbn = keyword.replaceAll('-', '')
-            results = documents.filter((item) =>
-                item.type === 'book' && item.data.isbn.some(isbn => isbn.replaceAll('-', '') === searchIsbn &&
-                    (category === 'all' || category === item.type)
-                ))
-        } else if (type == 'md5') {
-            setSearchType('md5')
-            results = documents.filter((item) => item.id === keyword && (category === 'all' || category === item.type))
+        if (exactMatchSnapshot) {
+            setSearchType(exactMatchSnapshot.searchType)
+            setFilterOptions(exactMatchSnapshot.filterOptions)
+            setSearchResults(exactMatchSnapshot.searchResults)
+            setFilterdResults(exactMatchSnapshot.filteredResults)
         } else {
+            const type = detect_search_type(keyword)
             setSearchType('normal')
             console.time('minisearch')
             const searchResult = minisearch.search(keyword, {
@@ -121,44 +131,12 @@ export function SearchList({
             })
             console.timeEnd('minisearch')
             results = searchResult.filter((item) => item.score > 1) as unknown as Item[];
-        }
-
-        const colleges = new Set<string>()
-        const courses = new Set<string>()
-        const content = new Set<string>()
-        for (const item of results) {
-            if (item.type === 'test') {
-                if (item.data.college) {
-                    for (const college of item.data.college) {
-                        colleges.add(college)
-                    }
-                }
-                if (item.data.course.name) courses.add(item.data.course.name)
-                if (item.data.content) {
-                    for (const type of item.data.content) {
-                        content.add(type)
-                    }
-                }
-            } else if (item.type === 'doc') {
-                if (item.data.course) {
-                    for (const course of item.data.course) {
-                        if (course.name) courses.add(course.name)
-                    }
-                }
-                if (item.data.content) {
-                    for (const type of item.data.content) {
-                        content.add(type)
-                    }
-                }
+            if (type === 'normal') {
+                setFilterOptions(buildFilterOptions(results))
+                setSearchResults(results)
             }
         }
-        setFilterOptions({
-            college: Array.from(colleges).sort(),
-            course: Array.from(courses).sort(),
-            content: Array.from(content).sort().reverse(),
-            type: ['期中', '期末', '其他']
-        })
-        setSearchResults(results)
+
         onSearching(false)
         setMiniSearching(false)
         setSearchTime(performance.now() - start)
@@ -177,18 +155,7 @@ export function SearchList({
             }
             return true
         })
-        if (category === "test") {
-            filterdResults = (filterdResults as TestItem[]).sort((a, b) => {
-                const aTime = a.data.time ? new Date(a.data.time.start).getTime() : 0;
-                const bTime = b.data.time ? new Date(b.data.time.start).getTime() : 0;
-                if (aTime !== bTime) return bTime - aTime;
-                const aSemester = a.data.time.semester ?? '';
-                const bSemester = b.data.time.semester ?? '';
-                if (aSemester !== bSemester) return bSemester.localeCompare(aSemester);
-                return b.id.localeCompare(a.id);
-            });
-        }
-        setFilterdResults(filterdResults)
+        setFilterdResults(sortFilteredResults(filterdResults, category))
     }, [filter, searchResults])
 
     if (loading || !searching || filterdResults.length === 0 && (debounceing || miniSearching)) {

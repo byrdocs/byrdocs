@@ -185,7 +185,8 @@ function ItemCover(
 }
 
 function ItemTitle({ children, filename, href, external }: { children: React.ReactNode, filename: string, href: string, external: boolean }) {
-    const url = new URL(href, location.origin)
+    const baseOrigin = typeof window !== "undefined" ? location.origin : PUBLISH_SITE_URL
+    const url = new URL(href, baseOrigin)
     if (!external) {
         url.searchParams.set("filename", filename)
         url.searchParams.set("f", "1")
@@ -422,7 +423,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                                 ...item.data.content,
                                                 ...(
                                                     item.data.filetype === "pdf" && item.data.wiki ?
-                                                        Array.from(new Set(item.data.wiki.data.content)
+                                                        Array.from(new Set<string>(item.data.wiki.data.content)
                                                             .difference(new Set(item.data.content)))
                                                             .map(e => (
                                                                 <a

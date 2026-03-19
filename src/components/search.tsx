@@ -3,7 +3,7 @@ import { Logo } from "./logo"
 import { useState, useRef, useEffect, Suspense } from "react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { CategoryType, Item, WikiTest } from "@/types"
+import { CategoryType, Item, MetaData, WikiTestItem } from "@/types"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { ChartLine, StepForward } from "lucide-react"
 import {
@@ -20,55 +20,47 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { TabItem, TabList } from "./tab"
 import { EmptySearchList, SearchList } from "./search-list"
 import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
+import { buildSearchDocuments } from "@/lib/search-items"
+import { buildDefaultSeo, buildItemSeo, applySeoToDocument, getSeoItemFromDocuments } from "@/lib/seo"
+import { detect_search_type } from "@/lib/search"
+import { useSsrBootstrap } from "@/ssr-context"
 
 const DEBOUNCE_TIME = 500;
-let wiki_id = 0;
 
-
-function initItem(item: Item) {
-    if (item.type === 'test') {
-        let time = item.data.time.start;
-        if (item.data.time.start !== item.data.time.end) {
-            time = `${item.data.time.start}-${item.data.time.end}`
-        }
-        item.data.title = `${time}${item.data.time.semester === 'First' ?
-            " 第一学期" :
-            item.data.time.semester === 'Second' ?
-                " 第二学期" : ""
-            } ${item.data.course.name}${item.data.time.stage ? ' ' + item.data.time.stage : ''}${item.data.content.length == 1 && item.data.content[0] == "答案" ?
-                "答案" : "试卷"
-            }`
-        if (item.data.filetype === 'wiki') {
-            item.id = `wiki-${++wiki_id}`
-        }
+function normalizeCategoryType(value: string | null): CategoryType {
+    if (value === "book" || value === "test" || value === "doc" || value === "all") {
+        return value;
     }
-    return item
+    return "all";
 }
 
 export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: boolean) => void }) {
+    const ssrBootstrap = useSsrBootstrap()
     const [query, setQuery] = useSearchParams()
     const q = query.get("q") || ""
-    const type = query.get("c") || ""
-    const [top, setTop] = useState(false)
+    const activeCategory = normalizeCategoryType(query.get("c"))
+    const initialDocuments = ssrBootstrap.initialDocuments ?? []
+    const initialSnapshot = ssrBootstrap.initialSearchSnapshot ?? null
+    const [top, setTop] = useState(q !== "")
     const input = useRef<HTMLInputElement>(null)
     const [showClear, setShowClear] = useState(q !== "")
     const showedTip = useRef(false)
-    const [active, setActive] = useState<CategoryType>(type as CategoryType ?? 'all')
+    const [active, setActive] = useState<CategoryType>(activeCategory)
     const [inputFixed, setInputFixed] = useState(false)
     const relative = useRef<HTMLDivElement>(null)
     const navigate = useNavigate()
-    const [docsData, setDocsData] = useState<Item[]>([])
-    const [searching, setSearching] = useState(false)
+    const [docsData, setDocsData] = useState<Item[]>(initialDocuments)
+    const [searching, setSearching] = useState(q !== "")
     const [preview, setPreview] = useState("")
     const [desktopPreview, setDesktopPreview] = useState("")
     const isMobile = useIsMobile()
     const [announcements, setAnnouncements] = useState<any[]>([])
     const updateQeury = useDebounceFn(setQuery, DEBOUNCE_TIME)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(initialDocuments.length === 0 && !initialSnapshot)
     const [keyword, setKeyword] = useState(q)
     const [debouncedKeyword, debouncing] = useDebounce(keyword, DEBOUNCE_TIME)
     const [miniSearching, setMiniSearching] = useState(false);
-    const [suspenseLoading, setSuspenseLoading] = useState(true);
+    const [suspenseLoading, setSuspenseLoading] = useState(false);
     const [showSigma, setShowSigma] = useState(false);
 
     if (isMobile) {
@@ -95,19 +87,14 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     }
 
     useEffect(() => {
+        setKeyword(q)
+        setSearching(Boolean(q))
         if (q) {
-            setKeyword(q)
-            setSearching(true)
-        } else {
-            setKeyword("")
-            setSearching(false)
+            setTop(true)
         }
-        if (type) {
-            setActive(type as CategoryType)
-        } else {
-            setActive("all")
-        }
-    }, [q, type])
+        setShowClear(Boolean(q))
+        setActive(activeCategory)
+    }, [q, activeCategory])
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
@@ -144,37 +131,19 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                     console.warn("Warning: /data/wiki.json not found. You cannot get the metadata from wiki.");
                     return [];
                 }
-                return res.json();
+                return res.json() as Promise<WikiTestItem[]>;
             })
             .catch(err => {
                 console.warn("Warning: failed to fetch /data/wiki.json.", err);
-                return [];
+                return [] as WikiTestItem[];
             });
 
         fetch(`/data/metadata.json`)
-            .then(res => res.json())
-            .then((docs_raw_data: Item[]) => {
-                const data = docs_raw_data.map(initItem)
-                const idMap = new Map<string, number>()
-                data.forEach((item, index) => {
-                    if (item.id) idMap.set(item.id, index)
-                })
-                wiki_req.then((wiki_raw_data: Item[]) => {
-                    wiki_raw_data.forEach((item) => {
-                        if (item.id && idMap.has(item.id)) {
-                            const mainItem = data[idMap.get(item.id)!]
-                            if (mainItem.type === 'test' && mainItem.data.filetype === 'pdf') {
-                                mainItem.data.wiki = {
-                                    url: item.url,
-                                    data: item.data as WikiTest
-                                }
-                            }
-                        } else {
-                            data.push(initItem(item))
-                        }
-                    })
+            .then(res => res.json() as Promise<MetaData>)
+            .then((docs_raw_data) => {
+                wiki_req.then((wiki_raw_data) => {
                     setLoading(false)
-                    setDocsData(data)
+                    setDocsData(buildSearchDocuments(docs_raw_data, wiki_raw_data))
                 })
             })
         return () => {
@@ -185,22 +154,31 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
 
     useEffect(() => {
         fetch("https://blog.byrdocs.org/feed.json")
-            .then(res => res.json())
+            .then(res => res.json() as Promise<{ items?: any[] }>)
             .then(data => {
                 const pages = data?.items
                     ?.filter((item: any) => item && item?.tags?.includes("主站公告") && item.title && item.summary)
                     ?.sort((a: any, b: any) => new Date(b.date_modified).getTime() - new Date(a.date_modified).getTime())
-                setAnnouncements(pages)
+                setAnnouncements(pages ?? [])
             })
     }, [])
 
     useEffect(() => {
-        if (!top && q) {
-            setTop(true)
+        const siteUrl = typeof window !== "undefined" ? window.location.origin : PUBLISH_SITE_URL
+        const pageUrl = typeof window !== "undefined" ? window.location.href : PUBLISH_SITE_URL
+
+        if (detect_search_type(q) === "md5") {
+            const seoItem = getSeoItemFromDocuments(
+                docsData.length > 0 ? docsData : initialDocuments,
+                q,
+                active,
+            )
+            applySeoToDocument(seoItem ? buildItemSeo(seoItem, pageUrl, siteUrl) : buildDefaultSeo(pageUrl, siteUrl))
+            return
         }
-        setKeyword(q)
-        setSearching(true)
-    }, [])
+
+        applySeoToDocument(buildDefaultSeo(pageUrl, siteUrl))
+    }, [active, docsData, initialDocuments, q])
 
     const LoadedIndicator = () => {
         useEffect(() => {
@@ -291,6 +269,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                             setShowClear(false)
                                             setSearching(false)
                                             setKeyword("")
+                                            setTop(true)
                                             setQuery(new URLSearchParams())
                                         }}>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
@@ -373,6 +352,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                 loading={loading}
                                 searching={searching}
                                 showSigma={showSigma}
+                                initialSnapshot={initialSnapshot}
                                 onPreview={url => {
                                     if (isMobile) {
                                         setPreview(url)

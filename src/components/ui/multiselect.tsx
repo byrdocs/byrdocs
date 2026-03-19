@@ -60,7 +60,7 @@ function MultiSelect({ children, onChange, selected, className, search, placehol
   const [showChevronUp, setShowChevronUp] = useState(false);
   const [showChevronDown, setShowChevronDown] = useState(true);
   const commandListRef = useRef<HTMLDivElement>(null);
-  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleScroll = () => {
     if (commandListRef.current) {

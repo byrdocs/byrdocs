@@ -26,7 +26,7 @@ export function useDebounce<T>(value: T, delay: number): [T, boolean] {
 }
 
 export function useDebounceFn(callback: Function, delay: number) {
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const debouncedFn = (...args: any[]) => {
     if (timer.current) {
@@ -40,4 +40,3 @@ export function useDebounceFn(callback: Function, delay: number) {
 
   return debouncedFn;
 }
-
