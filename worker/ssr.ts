@@ -85,6 +85,10 @@ function createCacheableSsrResponse(response: Response): Response {
     });
 }
 
+function escapeInlineStyle(value: string): string {
+    return value.replaceAll("</style", "<\\/style");
+}
+
 async function fetchMd5SsrDocuments(env: Cloudflare.Env, md5: string): Promise<Item[]> {
     const metadataResponse = await fetch(`${env.R2_DATA_SITE_URL}/metadata.json`);
     if (!metadataResponse.ok) return [];
@@ -108,6 +112,31 @@ async function fetchMd5SsrDocuments(env: Cloudflare.Env, md5: string): Promise<I
     }
 
     return buildSearchDocuments([matched], wikiItems);
+}
+
+class StylesheetLinkCollector {
+    readonly hrefs: string[] = [];
+
+    element(element: Element) {
+        const href = element.getAttribute("href");
+        if (href) {
+            this.hrefs.push(href);
+        }
+    }
+}
+
+class StylesheetLinkHandler {
+    private readonly enabled: boolean;
+
+    constructor(enabled: boolean) {
+        this.enabled = enabled;
+    }
+
+    element(element: Element) {
+        if (this.enabled) {
+            element.remove();
+        }
+    }
 }
 
 class RootHandler {
@@ -155,10 +184,12 @@ class AttributeHandler {
 }
 
 class HeadHandler {
+    private readonly inlineStyles: string | null;
     private readonly seo: PageSeo;
     private readonly state: HeadState;
 
-    constructor(seo: PageSeo, state: HeadState) {
+    constructor(seo: PageSeo, state: HeadState, inlineStyles: string | null) {
+        this.inlineStyles = inlineStyles;
         this.seo = seo;
         this.state = state;
     }
@@ -167,6 +198,9 @@ class HeadHandler {
         element.onEndTag((endTag) => {
             const missingTags: string[] = [];
 
+            if (this.inlineStyles) {
+                missingTags.push(`<style data-ssr-inline-css="true">${escapeInlineStyle(this.inlineStyles)}</style>`);
+            }
             if (!this.state.hasTitle) {
                 missingTags.push(`<title>${escapeHtml(this.seo.title)}</title>`);
             }
@@ -226,7 +260,13 @@ class BodyHandler {
     }
 }
 
-function rewriteHtmlResponse(response: Response, appHtml: string, bootstrap: SsrBootstrap, seo: PageSeo): Response {
+function rewriteHtmlResponse(
+    response: Response,
+    appHtml: string,
+    bootstrap: SsrBootstrap,
+    seo: PageSeo,
+    inlineStyles: string | null,
+): Response {
     const state: HeadState = {
         hasCanonical: false,
         hasDescription: false,
@@ -244,6 +284,7 @@ function rewriteHtmlResponse(response: Response, appHtml: string, bootstrap: Ssr
 
     const rewritten = new HTMLRewriter()
         .on("#root", new RootHandler(appHtml))
+        .on("link[rel=\"stylesheet\"]", new StylesheetLinkHandler(Boolean(inlineStyles)))
         .on("title", new TitleHandler(seo.title, state))
         .on("meta[name=\"description\"]", new AttributeHandler("content", seo.description, () => {
             state.hasDescription = true;
@@ -278,7 +319,7 @@ function rewriteHtmlResponse(response: Response, appHtml: string, bootstrap: Ssr
         .on("link[rel=\"canonical\"]", new AttributeHandler("href", seo.canonicalUrl, () => {
             state.hasCanonical = true;
         }))
-        .on("head", new HeadHandler(seo, state))
+        .on("head", new HeadHandler(seo, state, inlineStyles))
         .on("body", new BodyHandler(bootstrap))
         .transform(response);
 
@@ -289,6 +330,56 @@ function rewriteHtmlResponse(response: Response, appHtml: string, bootstrap: Ssr
         statusText: rewritten.statusText,
         headers,
     });
+}
+
+async function collectStylesheetHrefs(response: Response): Promise<string[]> {
+    const collector = new StylesheetLinkCollector();
+    await new HTMLRewriter()
+        .on("link[rel=\"stylesheet\"]", collector)
+        .transform(response)
+        .text();
+    return collector.hrefs;
+}
+
+async function fetchInlineStyles(
+    env: Cloudflare.Env,
+    pageUrl: string,
+    request: Request,
+    htmlResponse: Response,
+): Promise<string | null> {
+    const hrefs = Array.from(new Set(await collectStylesheetHrefs(htmlResponse)));
+    if (hrefs.length === 0) {
+        return null;
+    }
+
+    const cssList = await Promise.all(hrefs.map(async (href) => {
+        const styleUrl = new URL(href, pageUrl);
+        const styleRequest = new Request(styleUrl.toString(), request);
+        const response = await env.ASSETS.fetch(styleRequest);
+        if (!response.ok) {
+            console.warn("Failed to fetch stylesheet for SSR inline CSS", {
+                href,
+                status: response.status,
+            });
+            return null;
+        }
+        const contentType = response.headers.get("Content-Type") ?? "";
+        if (!contentType.includes("text/css")) {
+            console.info("Skip SSR inline CSS for non-CSS stylesheet response", {
+                contentType,
+                href,
+            });
+            return null;
+        }
+        return response.text();
+    }));
+
+    if (cssList.some((css) => css === null)) {
+        return null;
+    }
+
+    const inlineStyles = cssList.filter((css): css is string => Boolean(css)).join("\n");
+    return inlineStyles || null;
 }
 
 export async function renderMd5SsrPage({
@@ -322,6 +413,7 @@ export async function renderMd5SsrPage({
     const target = new URL(pageUrl);
     target.pathname = "/";
     const assetResponse = await env.ASSETS.fetch(target, request);
+    const inlineStyles = await fetchInlineStyles(env, pageUrl, request, assetResponse.clone());
     const initialDocuments = await fetchMd5SsrDocuments(env, md5);
     const initialSearchSnapshot = createExactMatchSearchSnapshot(md5, initialDocuments, category);
     const seoItem = initialSearchSnapshot?.filteredResults[0] ?? null;
@@ -334,7 +426,7 @@ export async function renderMd5SsrPage({
         initialSearchSnapshot,
     };
     const appHtml = renderHomePage(normalizedPageUrl, bootstrap);
-    let response = rewriteHtmlResponse(assetResponse, appHtml, bootstrap, seo);
+    let response = rewriteHtmlResponse(assetResponse, appHtml, bootstrap, seo, inlineStyles);
 
     if (response.status === 200) {
         response = createCacheableSsrResponse(response);
