@@ -11,6 +11,7 @@ declare namespace Cloudflare {
 		R2_DATA_SITE_URL: string;
 		PUBLISH_SITE_URL: string;
 		PUBLISH_DEV_SITE_URL: string;
+		WIKI_SITE_URL: string;
 		BYRDOCS_SITE_TOKEN: string;
 		BYRDOCS_SITE_URL: string;
 		GITHUB_CLIENT_ID: string;

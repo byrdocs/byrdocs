@@ -100,7 +100,7 @@ async function fetchMd5SsrDocuments(env: Cloudflare.Env, md5: string): Promise<I
     let wikiItems: WikiTestItem[] = [];
     if (matched.type === "test" && matched.data.filetype === "pdf") {
         try {
-            const wikiResponse = await fetch(`${env.R2_DATA_SITE_URL}/wiki.json`);
+            const wikiResponse = await fetch(`${env.WIKI_SITE_URL}/wiki.json`);
             if (wikiResponse.ok) {
                 const wikiJson = await wikiResponse.json() as WikiTestItem[];
                 const matchedWiki = wikiJson.find((item) => item.id === md5);
