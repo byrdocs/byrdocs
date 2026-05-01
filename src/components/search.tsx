@@ -27,6 +27,7 @@ import { getWasmInit, isWasmReady } from "@/lib/jieba-wasm"
 import { useSsrBootstrap } from "@/ssr-context"
 
 const DEBOUNCE_TIME = 500;
+const METADATA_WEIGHT_WITH_WASM = 0.9;
 
 function normalizeCategoryType(value: string | null): CategoryType {
     if (value === "book" || value === "test" || value === "doc" || value === "all") {
@@ -69,7 +70,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const [showSigma, setShowSigma] = useState(false);
     const shouldLoadWasm = detect_search_type(keyword) === "normal"
     const loadingInProgress = loading || (shouldLoadWasm && wasmLoading)
-    const metadataWeight = shouldLoadWasm ? 0.9 : 1
+    const metadataWeight = shouldLoadWasm ? METADATA_WEIGHT_WITH_WASM : 1
     const wasmWeight = 1 - metadataWeight
     const normalizedProgress = Math.min(100, Math.max(0, metadataProgress))
     const overallProgress = Math.min(
@@ -194,13 +195,13 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
             try {
                 const response = await fetch(`/data/metadata.json`)
                 if (!response.ok) {
-                    throw new Error(`Failed to fetch /data/metadata.json: ${response.status}`)
+                    throw new Error(`Failed to fetch /data/metadata.json: ${response.status} ${response.statusText}`)
                 }
                 const sizeHeader = response.headers.get("content-size") ?? response.headers.get("content-length")
                 const totalSize = sizeHeader ? Number.parseInt(sizeHeader, 10) : NaN
-                const hasSize = Number.isFinite(totalSize) && totalSize > 0
+                const canTrackProgress = Number.isFinite(totalSize) && totalSize > 0
                 let docs_raw_data: MetaData
-                if (response.body && hasSize) {
+                if (response.body && canTrackProgress) {
                     const reader = response.body.getReader()
                     const chunks: Uint8Array[] = []
                     let received = 0
