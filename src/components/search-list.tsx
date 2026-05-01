@@ -5,8 +5,9 @@ import MiniSearch from "minisearch"
 import { detect_search_type } from "@/lib/search"
 import { Badge } from "@/components/ui/badge"
 import { MultiSelect, MultiSelectOption } from "./ui/multiselect"
-import init, { cut_for_search } from 'jieba-wasm';
+import { cut_for_search } from "jieba-wasm";
 import { cn } from "@/lib/utils"
+import { getWasmInit } from "@/lib/jieba-wasm";
 import {
     buildFilterOptions,
     createExactMatchSearchSnapshot,
@@ -30,15 +31,6 @@ const minisearch = new MiniSearch({
     }
 })
 
-let wasmInit: Promise<unknown> | null = null
-
-function getWasmInit() {
-    if (!wasmInit) {
-        wasmInit = init('/jieba_rs_wasm_bg_2.2.0.wasm')
-    }
-    return wasmInit
-}
-
 const PAGE_SIZE = 20
 
 export function SearchList({
@@ -49,6 +41,8 @@ export function SearchList({
     debounceing,
     loading,
     showSigma,
+    showLoadingProgress,
+    loadingProgress,
     onPreview,
     onSearching,
     initialSnapshot,
@@ -60,6 +54,8 @@ export function SearchList({
     category: "all" | "test" | "doc" | "book"
     loading: boolean
     showSigma: boolean
+    showLoadingProgress?: boolean
+    loadingProgress?: number
     onPreview: (url: string) => void
     onSearching: (searching: boolean) => void
     initialSnapshot?: SearchSnapshot | null
@@ -159,7 +155,7 @@ export function SearchList({
     }, [filter, searchResults])
 
     if (loading || !searching || filterdResults.length === 0 && (debounceing || miniSearching)) {
-        return <EmptySearchList />
+        return <EmptySearchList showProgress={showLoadingProgress} progress={loadingProgress} />
     }
 
     return (<div className="space-y-2 md:space-y-3 md:w-[800px] w-full md:mx-auto p-0 md:px-5 pt-2">
@@ -297,11 +293,23 @@ export function SearchList({
     </div>)
 }
 
-export function EmptySearchList() {
+export function EmptySearchList({ showProgress = false, progress = 0 }: { showProgress?: boolean; progress?: number }) {
+    const normalizedProgress = Math.min(100, Math.max(0, progress))
     return (
         <div className="h-full text-center text-muted-foreground p-0 md:p-5 flex">
             <div className="text-xl sm:text-2xl font-light m-auto ">
-                搜索书籍、试卷和资料
+                <div>{showProgress ? "正在加载搜索数据..." : "搜索书籍、试卷和资料"}</div>
+                {showProgress && (
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        <div className="h-2 w-56 rounded-full bg-muted overflow-hidden">
+                            <div
+                                className="h-full bg-primary transition-all duration-200"
+                                style={{ width: `${normalizedProgress}%` }}
+                            />
+                        </div>
+                        <div className="text-xs text-muted-foreground">{normalizedProgress}%</div>
+                    </div>
+                )}
             </div>
         </div>
     )

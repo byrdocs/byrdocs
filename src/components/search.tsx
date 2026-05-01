@@ -23,6 +23,7 @@ import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
 import { buildSearchDocuments } from "@/lib/search-items"
 import { buildDefaultSeo, buildItemSeo, applySeoToDocument, getSeoItemFromDocuments } from "@/lib/seo"
 import { detect_search_type } from "@/lib/search"
+import { getWasmInit, isWasmReady } from "@/lib/jieba-wasm"
 import { useSsrBootstrap } from "@/ssr-context"
 
 const DEBOUNCE_TIME = 500;
@@ -57,11 +58,26 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const [announcements, setAnnouncements] = useState<any[]>([])
     const updateQeury = useDebounceFn(setQuery, DEBOUNCE_TIME)
     const [loading, setLoading] = useState(initialDocuments.length === 0 && !initialSnapshot)
+    const [metadataProgress, setMetadataProgress] = useState(
+        initialDocuments.length === 0 && !initialSnapshot ? 0 : 100
+    )
     const [keyword, setKeyword] = useState(q)
     const [debouncedKeyword, debouncing] = useDebounce(keyword, DEBOUNCE_TIME)
     const [miniSearching, setMiniSearching] = useState(false);
-    const [suspenseLoading, setSuspenseLoading] = useState(false);
+    const [wasmLoading, setWasmLoading] = useState(false);
+    const [showLoadingProgress, setShowLoadingProgress] = useState(false);
     const [showSigma, setShowSigma] = useState(false);
+    const shouldLoadWasm = detect_search_type(keyword) === "normal"
+    const loadingInProgress = loading || (shouldLoadWasm && wasmLoading)
+    const metadataWeight = shouldLoadWasm ? 0.9 : 1
+    const wasmWeight = 1 - metadataWeight
+    const normalizedProgress = Math.min(100, Math.max(0, metadataProgress))
+    const overallProgress = Math.min(
+        100,
+        Math.round(normalizedProgress * metadataWeight + (shouldLoadWasm && isWasmReady() ? wasmWeight * 100 : 0))
+    )
+    const showProgress = showLoadingProgress && top && searching && loadingInProgress
+    const showSearchSpinner = top && (loadingInProgress || debouncing || miniSearching)
 
     if (isMobile) {
         if (desktopPreview) {
@@ -95,6 +111,41 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         setShowClear(Boolean(q))
         setActive(activeCategory)
     }, [q, activeCategory])
+
+    useEffect(() => {
+        if (!top || !searching) return
+        if (loadingInProgress) {
+            setShowLoadingProgress(true)
+        }
+    }, [loadingInProgress, searching, top])
+
+    useEffect(() => {
+        if (typeof window === "undefined" || !top) return
+        if (!shouldLoadWasm) {
+            setWasmLoading(false)
+            return
+        }
+        if (isWasmReady()) {
+            setWasmLoading(false)
+            return
+        }
+        let cancelled = false
+        setWasmLoading(true)
+        getWasmInit()
+            .then(() => {
+                if (!cancelled) {
+                    setWasmLoading(false)
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setWasmLoading(false)
+                }
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [shouldLoadWasm, top])
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
@@ -138,15 +189,59 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                 return [] as WikiTestItem[];
             });
 
-        fetch(`/data/metadata.json`)
-            .then(res => res.json() as Promise<MetaData>)
-            .then((docs_raw_data) => {
-                wiki_req.then((wiki_raw_data) => {
+        let cancelled = false
+        const loadMetadata = async () => {
+            try {
+                const response = await fetch(`/data/metadata.json`)
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch /data/metadata.json: ${response.status}`)
+                }
+                const sizeHeader = response.headers.get("content-size") ?? response.headers.get("content-length")
+                const totalSize = sizeHeader ? Number.parseInt(sizeHeader, 10) : NaN
+                const hasSize = Number.isFinite(totalSize) && totalSize > 0
+                let docs_raw_data: MetaData
+                if (response.body && hasSize) {
+                    const reader = response.body.getReader()
+                    const chunks: Uint8Array[] = []
+                    let received = 0
+                    while (true) {
+                        const { done, value } = await reader.read()
+                        if (done) break
+                        if (value) {
+                            chunks.push(value)
+                            received += value.length
+                            if (!cancelled) {
+                                setMetadataProgress(Math.min(100, Math.round((received / totalSize) * 100)))
+                            }
+                        }
+                    }
+                    const merged = new Uint8Array(received)
+                    let offset = 0
+                    for (const chunk of chunks) {
+                        merged.set(chunk, offset)
+                        offset += chunk.length
+                    }
+                    docs_raw_data = JSON.parse(new TextDecoder().decode(merged)) as MetaData
+                } else {
+                    docs_raw_data = await response.json() as MetaData
+                }
+                const wiki_raw_data = await wiki_req
+                if (!cancelled) {
+                    setMetadataProgress(100)
                     setLoading(false)
                     setDocsData(buildSearchDocuments(docs_raw_data, wiki_raw_data))
-                })
-            })
+                }
+            } catch (error) {
+                console.warn("Warning: failed to fetch /data/metadata.json.", error)
+                if (!cancelled) {
+                    setMetadataProgress(100)
+                    setLoading(false)
+                }
+            }
+        }
+        loadMetadata()
         return () => {
+            cancelled = true
             document.removeEventListener("keydown", handleKeyDown)
             window.removeEventListener("scroll", handleScroll)
         }
@@ -179,16 +274,6 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
 
         applySeoToDocument(buildDefaultSeo(pageUrl, siteUrl))
     }, [active, docsData, initialDocuments, q])
-
-    const LoadedIndicator = () => {
-        useEffect(() => {
-            setSuspenseLoading(false);
-            return () => {
-                setSuspenseLoading(true);
-            };
-        }, []);
-        return null;
-    };
 
     return (
         <SidebarProvider open={desktopPreview !== ""} className="h-full" >
@@ -235,7 +320,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                     </div>)}
 
                                     <div className="absolute left-[15px] top-1/2 transform -translate-y-1/2 w-6 h-6 text-muted-foreground">
-                                        {top && suspenseLoading || loading || debouncing || miniSearching ?
+                                        {showSearchSpinner ?
                                             <svg className="animate-spin text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -342,8 +427,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                 </div>
                             </div>
                         </div>
-                        <Suspense fallback={<EmptySearchList />}>
-                            <LoadedIndicator />
+                        <Suspense fallback={<EmptySearchList showProgress={showProgress} progress={overallProgress} />}>
                             <SearchList
                                 documents={docsData}
                                 keyword={debouncedKeyword}
@@ -352,6 +436,8 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                 loading={loading}
                                 searching={searching}
                                 showSigma={showSigma}
+                                showLoadingProgress={showProgress}
+                                loadingProgress={overallProgress}
                                 initialSnapshot={initialSnapshot}
                                 onPreview={url => {
                                     if (isMobile) {
