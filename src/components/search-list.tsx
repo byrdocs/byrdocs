@@ -298,7 +298,7 @@ export function EmptySearchList({ showProgress = false, progress = 0 }: { showPr
     return (
         <div className="h-full text-center text-muted-foreground p-0 md:p-5 flex">
             <div className="text-xl sm:text-2xl font-light m-auto ">
-                <div>{showProgress ? "正在加载搜索数据..." : "搜索书籍、试卷和资料"}</div>
+                <div>{showProgress ? "正在加载搜索数据…" : "搜索书籍、试卷和资料"}</div>
                 {showProgress && (
                     <div className="mt-4 flex flex-col items-center gap-2">
                         <div className="h-2 w-56 rounded-full bg-muted overflow-hidden">

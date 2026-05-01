@@ -75,7 +75,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const normalizedProgress = Math.min(100, Math.max(0, metadataProgress))
     const overallProgress = Math.min(
         100,
-        Math.round(normalizedProgress * metadataWeight + (shouldLoadWasm && isWasmReady() ? wasmWeight * 100 : 0))
+        Math.round(normalizedProgress * metadataWeight + (isWasmReady() ? wasmWeight * 100 : 0))
     )
     const showProgress = showLoadingProgress && top && searching && loadingInProgress
     const showSearchSpinner = top && (loadingInProgress || debouncing || miniSearching)
