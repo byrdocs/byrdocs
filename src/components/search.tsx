@@ -23,11 +23,10 @@ import { useDebounce, useDebounceFn } from "@/hooks/use-debounce"
 import { buildSearchDocuments } from "@/lib/search-items"
 import { buildDefaultSeo, buildItemSeo, applySeoToDocument, getSeoItemFromDocuments } from "@/lib/seo"
 import { detect_search_type } from "@/lib/search"
-import { getWasmInit, isWasmReady } from "@/lib/jieba-wasm"
+import { getWasmInit, isWasmReady, setWasmProgressCallback } from "@/lib/jieba-wasm"
 import { useSsrBootstrap } from "@/ssr-context"
 
 const DEBOUNCE_TIME = 500;
-const METADATA_WEIGHT_WITH_WASM = 0.9;
 
 function normalizeCategoryType(value: string | null): CategoryType {
     if (value === "book" || value === "test" || value === "doc" || value === "all") {
@@ -59,24 +58,24 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     const [announcements, setAnnouncements] = useState<any[]>([])
     const updateQeury = useDebounceFn(setQuery, DEBOUNCE_TIME)
     const [loading, setLoading] = useState(initialDocuments.length === 0 && !initialSnapshot)
-    const [metadataProgress, setMetadataProgress] = useState(
-        initialDocuments.length === 0 && !initialSnapshot ? 0 : 100
-    )
+    const [metadataReceived, setMetadataReceived] = useState(0)
+    const [metadataTotal, setMetadataTotal] = useState(0)
+    const [wasmReceived, setWasmReceived] = useState(0)
+    const [wasmTotal, setWasmTotal] = useState(0)
     const [keyword, setKeyword] = useState(q)
     const [debouncedKeyword, debouncing] = useDebounce(keyword, DEBOUNCE_TIME)
     const [miniSearching, setMiniSearching] = useState(false);
-    const [wasmLoading, setWasmLoading] = useState(false);
+    const [wasmLoading, setWasmLoading] = useState(!isWasmReady());
     const [showLoadingProgress, setShowLoadingProgress] = useState(false);
     const [showSigma, setShowSigma] = useState(false);
     const shouldLoadWasm = detect_search_type(keyword) === "normal"
     const loadingInProgress = loading || (shouldLoadWasm && wasmLoading)
-    const metadataWeight = shouldLoadWasm ? METADATA_WEIGHT_WITH_WASM : 1
-    const wasmWeight = 1 - metadataWeight
-    const normalizedProgress = Math.min(100, Math.max(0, metadataProgress))
-    const overallProgress = Math.min(
-        100,
-        Math.round(normalizedProgress * metadataWeight + (isWasmReady() ? wasmWeight * 100 : 0))
-    )
+    const totalBytes = metadataTotal + (shouldLoadWasm ? wasmTotal : 0)
+    const downloadedBytes = metadataReceived + (shouldLoadWasm ? wasmReceived : 0)
+    const bothTotalsKnown = metadataTotal > 0 && (!shouldLoadWasm || wasmTotal > 0)
+    const overallProgress: number | null = bothTotalsKnown && totalBytes > 0
+        ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+        : null
     const showProgress = showLoadingProgress && top && searching && loadingInProgress
     const showSearchSpinner = top && (loadingInProgress || debouncing || miniSearching)
 
@@ -121,17 +120,14 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     }, [loadingInProgress, searching, top])
 
     useEffect(() => {
-        if (typeof window === "undefined" || !top) return
-        if (!shouldLoadWasm) {
-            setWasmLoading(false)
-            return
-        }
-        if (isWasmReady()) {
-            setWasmLoading(false)
-            return
-        }
+        if (typeof window === "undefined" || isWasmReady()) return
         let cancelled = false
-        setWasmLoading(true)
+        setWasmProgressCallback((received, total) => {
+            if (!cancelled) {
+                setWasmReceived(received)
+                setWasmTotal(total)
+            }
+        })
         getWasmInit()
             .then(() => {
                 if (!cancelled) {
@@ -146,7 +142,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         return () => {
             cancelled = true
         }
-    }, [shouldLoadWasm, top])
+    }, [])
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
@@ -198,8 +194,12 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                     throw new Error(`Failed to fetch /data/metadata.json: ${response.status} ${response.statusText}`)
                 }
                 const sizeHeader = response.headers.get("content-size") ?? response.headers.get("content-length")
+                const contentEncoding = response.headers.get("content-encoding")
                 const totalSize = sizeHeader ? Number.parseInt(sizeHeader, 10) : NaN
-                const canTrackProgress = Number.isFinite(totalSize) && totalSize > 0
+                const canTrackProgress = Number.isFinite(totalSize) && totalSize > 0 && (!contentEncoding || response.headers.has("content-size"))
+                if (canTrackProgress && !cancelled) {
+                    setMetadataTotal(totalSize)
+                }
                 let docs_raw_data: MetaData
                 if (response.body && canTrackProgress) {
                     const reader = response.body.getReader()
@@ -212,7 +212,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                             chunks.push(value)
                             received += value.length
                             if (!cancelled) {
-                                setMetadataProgress(Math.min(100, Math.round((received / totalSize) * 100)))
+                                setMetadataReceived(received)
                             }
                         }
                     }
@@ -228,14 +228,12 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                 }
                 const wiki_raw_data = await wiki_req
                 if (!cancelled) {
-                    setMetadataProgress(100)
                     setLoading(false)
                     setDocsData(buildSearchDocuments(docs_raw_data, wiki_raw_data))
                 }
             } catch (error) {
                 console.warn("Warning: failed to fetch /data/metadata.json.", error)
                 if (!cancelled) {
-                    setMetadataProgress(100)
                     setLoading(false)
                 }
             }
@@ -434,7 +432,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                 keyword={debouncedKeyword}
                                 debounceing={debouncing}
                                 category={active}
-                                loading={loading}
+                                loading={loadingInProgress}
                                 searching={searching}
                                 showSigma={showSigma}
                                 showLoadingProgress={showProgress}

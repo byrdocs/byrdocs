@@ -55,7 +55,7 @@ export function SearchList({
     loading: boolean
     showSigma: boolean
     showLoadingProgress?: boolean
-    loadingProgress?: number
+    loadingProgress?: number | null
     onPreview: (url: string) => void
     onSearching: (searching: boolean) => void
     initialSnapshot?: SearchSnapshot | null
@@ -293,8 +293,8 @@ export function SearchList({
     </div>)
 }
 
-export function EmptySearchList({ showProgress = false, progress = 0 }: { showProgress?: boolean; progress?: number }) {
-    const normalizedProgress = Math.min(100, Math.max(0, progress))
+export function EmptySearchList({ showProgress = false, progress = null }: { showProgress?: boolean; progress?: number | null }) {
+    const normalizedProgress = progress !== null ? Math.min(100, Math.max(0, progress)) : null
     return (
         <div className="h-full text-center text-muted-foreground p-0 md:p-5 flex">
             <div className="text-xl sm:text-2xl font-light m-auto ">
@@ -302,12 +302,18 @@ export function EmptySearchList({ showProgress = false, progress = 0 }: { showPr
                 {showProgress && (
                     <div className="mt-4 flex flex-col items-center gap-2">
                         <div className="h-2 w-56 rounded-full bg-muted overflow-hidden">
-                            <div
-                                className="h-full bg-primary transition-all duration-200"
-                                style={{ width: `${normalizedProgress}%` }}
-                            />
+                            {normalizedProgress !== null ? (
+                                <div
+                                    className="h-full bg-foreground/20 transition-all duration-200"
+                                    style={{ width: `${normalizedProgress}%` }}
+                                />
+                            ) : (
+                                <div className="h-full w-1/3 bg-foreground/20 rounded-full animate-indeterminate" />
+                            )}
                         </div>
-                        <div className="text-xs text-muted-foreground">{normalizedProgress}%</div>
+                        <div className={cn("text-xs text-muted-foreground", normalizedProgress === null && "invisible")}>
+                            {normalizedProgress ?? 0}%
+                        </div>
                     </div>
                 )}
             </div>
