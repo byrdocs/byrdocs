@@ -19,7 +19,7 @@ export default new Hono<{
             return c.json({ error: "缺少 Token", success: false })
         }
         try {
-            const payload = await verify(token, c.env.JWT_SECRET, 'HS256')
+            const payload = await verify(token, c.env.JWT_SECRET)
             if (typeof payload.id !== "string") {
                 return c.json({ error: "Token 无效", success: false })
             }
