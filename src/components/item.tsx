@@ -33,8 +33,8 @@ const thumbnail_url = (md5: string) => `/files/${md5}.webp`;
 function Preview() {
     return (
         <>
-            <Search className="w-3 h-3 md:w-4 md:h-4 inline-block text-muted-foreground mb-[3px] mr-1" />
-            <span className="text-muted-foreground font-light md:text-base text-xs mr-[1px] select-none">预览</span>
+            <Search className="w-3 h-3 @md:w-4 @md:h-4 inline-block text-muted-foreground mb-[3px] mr-1" />
+            <span className="text-muted-foreground font-light @md:text-base text-xs mr-[1px] select-none">预览</span>
         </>
     )
 }
@@ -42,15 +42,15 @@ function Preview() {
 function ItemCard({ id, children, onPreview, canPreview }: { id?: string, children: React.ReactNode, onPreview?: () => void, canPreview: boolean }) {
     const [copied, setCopied] = useState(false);
     return (
-        <Card className="w-full rounded-none md:rounded-lg shadow-sm md:hover:shadow-md transition-shadow overflow-hidden relative group/card">
+        <Card className="w-full rounded-none @md:rounded-lg shadow-sm @md:hover:shadow-md transition-shadow overflow-hidden relative group/card">
             {canPreview && (
-                <div className="md:opacity-0 group-hover/card:opacity-100 transition-opacity duration-100 absolute z-10 left-0 top-[5px] italic text-muted-foreground bg-muted px-1 rounded-r-md shadow-sm font-mono text-sm md:text-md">
+                <div className="@md:opacity-0 group-hover/card:opacity-100 transition-opacity duration-100 absolute z-10 left-0 top-[5px] italic text-muted-foreground bg-muted px-1 rounded-r-md shadow-sm font-mono text-sm @md:text-md">
                     <button className="inline-block cursor-pointer preview-file" onClick={onPreview}>
                         <Preview />
                     </button>
                 </div>
             )}
-            <div className="grid grid-cols-[112.5px_1fr] md:grid-cols-[150px_1fr] min-h-[150px] md:min-h-[200px]">
+            <div className="grid grid-cols-[112.5px_1fr] @md:grid-cols-[150px_1fr] min-h-[150px] @md:min-h-[200px]">
                 {children}
             </div>
             {id &&
@@ -192,13 +192,13 @@ function ItemTitle({ children, filename, href, external }: { children: React.Rea
         url.searchParams.set("f", "1")
     }
     return (
-        <h3 className="md:text-2xl font-bold mb-1">
+        <h3 className="@md:text-2xl font-bold mb-1">
             <a
                 className="underline-offset-2 hover:underline cursor-pointer download-file"
                 href={url.toString()}
                 target="_blank"
             >
-                {children} {external && <ExternalIcon className="w-3 h-3 md:w-4 md:h-4 inline-block" />}
+                {children} {external && <ExternalIcon className="w-3 h-3 @md:w-4 @md:h-4 inline-block" />}
             </a>
         </h3>
     );
@@ -216,7 +216,7 @@ function ItemBadge(
 ) {
     return (
         <Badge className={cn(
-            "px-1 py-0 text-[10px] md:text-sm md:px-2 md:mb-1 md:py-[1px] font-light select-none",
+            "px-1 py-0 text-[10px] @md:text-sm @md:px-2 @md:mb-1 @md:py-[1px] font-light select-none",
             className,
             {
                 "bg-green-600 hover:bg-green-600": color === "green",
@@ -241,7 +241,7 @@ function WikiBadge({ url }: { url: string }) {
     return <a href={url} target="_blank">
         <ItemBadge color="purple" className="cursor-pointer hover:opacity-80 space-x-px">
             <span className="inline-block">wiki</span>
-            <ExternalIcon className="w-2 h-2 md:w-3 md:h-3 inline-block" />
+            <ExternalIcon className="w-2 h-2 @md:w-3 @md:h-3 inline-block" />
         </ItemBadge>
     </a>
 }
@@ -301,10 +301,10 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             }}
                         />
                         <div className={cn(
-                            "p-2 md:p-4 space-y-1",
+                            "p-2 @md:p-4 space-y-1",
                             {
-                                "md:space-y-4": item.data?.translators?.length === 0,
-                                "md:space-y-2": item.data?.translators?.length !== 0,
+                                "@md:space-y-4": item.data?.translators?.length === 0,
+                                "@md:space-y-2": item.data?.translators?.length !== 0,
                             }
                         )}>
                             <div>
@@ -315,24 +315,24 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                 >
                                     {item.data.title}
                                 </ItemTitle>
-                                <p className="text-muted-foreground md:text-sm text-xs ">
+                                <p className="text-muted-foreground @md:text-sm text-xs ">
                                     {item.data.authors.join(", ")}
                                 </p>
-                                {item.data?.translators?.length && item.data?.translators?.length > 0 && (<p className="text-muted-foreground text-xs md:text-sm">
+                                {item.data?.translators?.length && item.data?.translators?.length > 0 && (<p className="text-muted-foreground text-xs @md:text-sm">
                                     {item.data.translators?.join(", ")} 译
                                 </p>)}
-                                <div className="space-x-1 -my-[1px] md:mt-2">
+                                <div className="space-x-1 -my-[1px] @md:mt-2">
                                     <ItemBadge>书籍</ItemBadge>
                                     <ItemBadge color={"yellow"}>{item.data.filetype}</ItemBadge>
                                     {item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
                                 </div>
                             </div>
-                            <div className="text-xs md:text-sm md:space-y-1">
+                            <div className="text-xs @md:text-sm @md:space-y-1">
                                 <div className={cn(
                                     "grid",
                                     {
                                         "grid-cols-1": !item.data.publish_year,
-                                        "grid-cols-1 md:grid-cols-2 md:gap-1": item.data.publish_year,
+                                        "grid-cols-1 @md:grid-cols-2 @md:gap-1": item.data.publish_year,
                                     }
                                 )}>
                                     <div>
@@ -348,7 +348,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     "grid",
                                     {
                                         "grid-cols-1": !item.data.edition,
-                                        "grid-cols-1 md:grid-cols-2 md:gap-1": item.data.edition,
+                                        "grid-cols-1 @md:grid-cols-2 @md:gap-1": item.data.edition,
                                     }
                                 )}>
                                     <div>
@@ -388,7 +388,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                 external={item.data.filetype !== 'pdf'}
                             />
                             <div className={cn(
-                                "p-2 md:p-4 space-y-1 md:space-y-2",
+                                "p-2 @md:p-4 space-y-1 @md:space-y-2",
                             )}>
                                 <div>
                                     <ItemTitle
@@ -398,10 +398,10 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     >
                                         {item.data.title}
                                     </ItemTitle>
-                                    <p className="text-muted-foreground md:text-sm text-xs">
+                                    <p className="text-muted-foreground @md:text-sm text-xs">
                                         {item.data.course.name} {item.data.course.type ? '(' + item.data.course.type + ')' : ''}
                                     </p>
-                                    <div className="space-x-1 -my-[1px] md:mt-2">
+                                    <div className="space-x-1 -my-[1px] @md:mt-2">
                                         <ItemBadge color="green">试卷</ItemBadge>
                                         {item.data.filetype === 'pdf' && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
                                         {item.data.filetype === 'pdf' && item.data.wiki && <WikiBadge url={item.data.wiki.url} />}
@@ -410,7 +410,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                         {item.data.college ? item.data.college.map(x => <ItemBadge variant="secondary" key={x}>{x}</ItemBadge>) : null}
                                     </div>
                                 </div>
-                                <div className="text-xs md:text-sm md:space-y-1">
+                                <div className="text-xs @md:text-sm @md:space-y-1">
                                     <div>
                                         <span className="font-medium">考试阶段: </span>
                                         {item.data.time.stage || "其他"}
@@ -432,7 +432,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                                                     target="_blank"
                                                                     className="underline text-blue-500 hover:text-blue-400"
                                                                 >
-                                                                    {e} <ExternalIcon className="w-2 h-2 md:w-3 md:h-3 mb-1 inline-block" />
+                                                                    {e} <ExternalIcon className="w-2 h-2 @md:w-3 @md:h-3 mb-1 inline-block" />
                                                                 </a>
                                                             )) :
                                                         []
@@ -461,7 +461,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                         openDialog(url("cover", item.id, "jpg"), thumbnail_url(item.id));
                                     }}
                                 />
-                                <div className="p-2 md:p-4 space-y-1 md:space-y-2">
+                                <div className="p-2 @md:p-4 space-y-1 @md:space-y-2">
                                     <div>
                                         <ItemTitle
                                             filename={`${item.data.title}.${item.data.filetype}`}
@@ -470,18 +470,18 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                         >
                                             {item.data.title}
                                         </ItemTitle>
-                                        <p className="text-muted-foreground md:text-sm text-xs">
+                                        <p className="text-muted-foreground @md:text-sm text-xs">
                                             {item.data.course.map(x => {
                                                 return x.name + (x.type ? '(' + x.type + ')' : '')
                                             }).join(', ')}
                                         </p>
                                     </div>
-                                    <div className="space-x-1 md:mt-2">
+                                    <div className="space-x-1 @md:mt-2">
                                         <ItemBadge color="orange">资料</ItemBadge>
                                         {item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
                                         <ItemBadge color={item.data.filetype === "pdf" ? "yellow" : "sky"}>{item.data.filetype}</ItemBadge>
                                     </div>
-                                    <div className="text-xs md:text-sm md:space-y-1">
+                                    <div className="text-xs @md:text-sm @md:space-y-1">
                                         <div>
                                             <span className="font-medium">类别: </span>
                                             {item.data.content.join(", ")}

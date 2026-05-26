@@ -158,21 +158,21 @@ export function SearchList({
         return <EmptySearchList showProgress={showLoadingProgress} progress={loadingProgress} />
     }
 
-    return (<div className="space-y-2 md:space-y-3 md:w-[800px] w-full md:mx-auto p-0 md:px-5 pt-2">
+    return (<div className="space-y-2 @md:space-y-3 @md:w-[800px] w-full @md:mx-auto p-0 @md:px-5 pt-2">
         {
             searchType === 'isbn' ?
-            <Badge className="text-muted-foreground mx-2 md:mx-0" variant={"outline"}>
+            <Badge className="text-muted-foreground mx-2 @md:mx-0" variant={"outline"}>
                 搜索类型：ISBN
             </Badge> :
             searchType === 'md5' ?
-            <Badge className="text-muted-foreground mx-2 md:mx-0" variant={"outline"}>
+            <Badge className="text-muted-foreground mx-2 @md:mx-0" variant={"outline"}>
                 搜索类型：MD5
             </Badge> : 
             category == 'test' || category == 'doc' ?
             <div className="flex-row flex">
                 <div className="flex-1">
                     {category === 'test' ? 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-2 gap-y-1 px-2 md:px-0">
+                        <div className="grid grid-cols-2 @md:grid-cols-4 gap-x-2 gap-y-1 px-2 @md:px-0">
                             <MultiSelect
                                 selected={filter.college}
                                 key="colledge"
@@ -227,7 +227,7 @@ export function SearchList({
                         </div>
                         :
                         category === 'doc' ?
-                            <div className="grid grid-cols-2 gap-x-2 px-2 md:px-0">
+                            <div className="grid grid-cols-2 gap-x-2 px-2 @md:px-0">
                                 <MultiSelect
                                     selected={filter.course}
                                     key="docCourse"
@@ -262,7 +262,7 @@ export function SearchList({
             <>
                 {searchType === 'normal' && <div 
                     className={cn(
-                        "text-sm text-muted-foreground px-2 md:px-0 transition-all overflow-hidden",
+                        "text-sm text-muted-foreground px-2 @md:px-0 transition-all overflow-hidden",
                         {
                             "max-h-0": !showSigma,
                             "max-h-[100px]": showSigma,
@@ -276,13 +276,13 @@ export function SearchList({
                     <ItemDisplay key={item.id} item={item as unknown as Item} index={index} onPreview={onPreview} />
                 ))}
             </>
-            : <div className="text-center text-muted-foreground p-0 md:p-5 flex h-[40vh]">
-                <div className="text-xl sm:text-2xl font-light m-auto ">
+            : <div className="text-center text-muted-foreground p-0 @md:p-5 flex h-[40vh]">
+                <div className="text-xl @sm:text-2xl font-light m-auto ">
                     <div className="px-2">
                         <div className="mb-4">没有找到相关结果</div>
-                        <div className="text-xs sm:text-base mb-2">注意使用全称搜索，例如“高等数学”而非“高数”</div>
+                        <div className="text-xs @sm:text-base mb-2">注意使用全称搜索，例如“高等数学”而非“高数”</div>
                         <hr />
-                        <div className="text-xs sm:text-base mt-2">
+                        <div className="text-xs @sm:text-base mt-2">
                             已有文件？<a className="text-blue-500 hover:text-blue-400" target="_blank" href="https://github.com/byrdocs/byrdocs-archive/blob/master/CONTRIBUTING.md">上传到 BYR Docs</a>
                         </div>
                     </div>
@@ -296,8 +296,8 @@ export function SearchList({
 export function EmptySearchList({ showProgress = false, progress = null }: { showProgress?: boolean; progress?: number | null }) {
     const normalizedProgress = progress !== null ? Math.min(100, Math.max(0, progress)) : null
     return (
-        <div className="h-full text-center text-muted-foreground p-0 md:p-5 flex">
-            <div className="text-xl sm:text-2xl font-light m-auto ">
+        <div className="h-full text-center text-muted-foreground p-0 @md:p-5 flex">
+            <div className="text-xl @sm:text-2xl font-light m-auto ">
                 <div>{showProgress ? "正在加载搜索数据…" : "搜索书籍、试卷和资料"}</div>
                 {showProgress && (
                     <div className="mt-4 flex flex-col items-center gap-2">

@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 import animate from 'tailwindcss-animate'
+import containerQueries from '@tailwindcss/container-queries'
 export default {
   darkMode: "media",
   content: [
@@ -19,6 +20,12 @@ export default {
   		}
   	},
   	extend: {
+  		containers: {
+  			'sm': '640px',
+  			'md': '768px',
+  			'lg': '1024px',
+  			'xl': '1280px',
+  		},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
@@ -98,5 +105,5 @@ export default {
   		}
   	}
   },
-  plugins: [animate],
+  plugins: [animate, containerQueries],
 }

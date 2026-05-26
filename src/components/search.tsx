@@ -15,6 +15,7 @@ import {
     SidebarProvider,
     SidebarContent,
     Sidebar,
+    SidebarResizeHandle,
 } from "@/components/ui/sidebar"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TabItem, TabList } from "./tab"
@@ -35,7 +36,7 @@ function normalizeCategoryType(value: string | null): CategoryType {
     return "all";
 }
 
-export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: boolean) => void }) {
+export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: false | string) => void }) {
     const ssrBootstrap = useSsrBootstrap()
     const [query, setQuery] = useSearchParams()
     const q = query.get("q") || ""
@@ -87,7 +88,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
         }
     } else {
         if (preview) {
-            onLayoutPreview(true)
+            onLayoutPreview("40vw")
             setDesktopPreview(preview)
             setPreview("")
         }
@@ -275,12 +276,16 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
     }, [active, docsData, initialDocuments, q])
 
     return (
-        <SidebarProvider open={desktopPreview !== ""} className="h-full" >
-            <div className={cn("flex flex-col w-full my-auto", {
+        <SidebarProvider open={desktopPreview !== ""} className="h-full" onWidthChange={(width) => {
+            if (desktopPreview !== "") {
+                onLayoutPreview(width)
+            }
+        }}>
+            <div className={cn("@container flex flex-col w-full my-auto", {
                     "h-full": top,
                 })}>
                 <div className={cn(
-                    "md:w-[800px] w-full md:mx-auto px-5 flex flex-col"
+                    "@md:w-[800px] w-full @md:mx-auto px-5 flex flex-col"
                 )}>
                     <div className={cn(
                         "w-full",
@@ -291,30 +296,31 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                         <div className={cn(
                             "w-full m-auto",
                             {
-                                "h-12 mb-8 md:mb-12": !top,
-                                "h-8 xl:h-0 my-4 sm:my-6 md:my-8": top,
+                                "h-12 mb-8 @md:mb-12": !top,
+                                "h-8 @xl:h-0 my-4 @sm:my-6 @md:my-8": top,
                             }
                         )}
                             onClick={reset}
                         >
-                            <Logo size={top ? 0 : 2} confetti={!top} className={cn({ "block xl:hidden": top })} />
+                            <Logo size={top ? 0 : 2} confetti={!top} className={cn({ "block @xl:hidden": top })} />
                         </div>
-                        <div className={cn("h-12 md:h-14", { "hidden": !inputFixed })} ref={relative}></div>
+                        <div className={cn("h-12 @md:h-14", { "hidden": !inputFixed })} ref={relative}></div>
                         <div className={cn(
                             "z-20 transition-shadow duration-200",
                             {
-                                "fixed top-0 left-0 w-full py-4 bg-background shadow-md": inputFixed,
-                                "w-[60vw]": inputFixed && desktopPreview !== "",
-                                "md:w-[800px] max-w-full md:m-auto": !inputFixed,
+                                "@container fixed top-0 left-0 w-full py-4 bg-background shadow-md": inputFixed,
+                                "@md:w-[800px] max-w-full @md:m-auto": !inputFixed,
                             }
-                        )}>
+                        )}
+                            style={inputFixed && desktopPreview !== "" ? { width: `calc(100vw - var(--sidebar-width))` } : undefined}
+                        >
                             <div className={cn(
                                 {
-                                    "md:w-[800px] max-w-full md:m-auto px-5": inputFixed
+                                    "@md:w-[800px] max-w-full @md:m-auto px-5": inputFixed
                                 }
                             )}>
                                 <div className="relative">
-                                    {top && desktopPreview === "" && (<div className="hidden xl:block absolute left-3 transform -translate-x-[240px] translate-y-[3px]" onClick={reset}>
+                                    {top && desktopPreview === "" && (<div className="hidden @xl:block absolute left-3 transform -translate-x-[240px] translate-y-[3px]" onClick={reset}>
                                         <Logo size={0} />
                                     </div>)}
 
@@ -330,7 +336,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                     </div>
                                     <Input
                                         className={cn(
-                                            "pl-12 h-12 md:h-14 text-lg hover:shadow-lg shadow-md focus-visible:ring-0 dark:ring-1",
+                                            "pl-12 h-12 @md:h-14 text-lg hover:shadow-lg shadow-md focus-visible:ring-0 dark:ring-1",
                                             {
                                                 "pr-12": showClear,
                                             }
@@ -394,9 +400,9 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                 {top && (
                     <>
                         <div className="w-full left-0 border-b-[0.5px] border-muted-foreground pb-0 mx-auto">
-                            <div className="md:w-[800px] max-w-full md:m-auto px-5">
-                                <div className="flex mt-2 md:mt-4 text-2xl font-light">
-                                    <div className="flex items-center mx-auto space-x-4 md:space-x-8 ">
+                            <div className="@md:w-[800px] max-w-full @md:m-auto px-5">
+                                <div className="flex mt-2 @md:mt-4 text-2xl font-light">
+                                    <div className="flex items-center mx-auto space-x-4 @md:space-x-8 ">
                                         <TabList onSelect={select => {
                                             setActive(select as CategoryType)
                                             setQuery(new URLSearchParams({ c: select, q: keyword }))
@@ -407,7 +413,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                             <TabItem value="doc">资料</TabItem>
                                         </TabList>
                                     </div>
-                                    <div className="items-end hidden md:block py-1">
+                                    <div className="items-end hidden @md:block py-1">
                                         <button
                                             className={cn(
                                                 "h-full px-1 text-xs hover:bg-muted/60 active:bg-muted/40 transition-colors rounded-md",
@@ -443,7 +449,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                                         setPreview(url)
                                     } else {
                                         setDesktopPreview(url)
-                                        onLayoutPreview(true)
+                                        onLayoutPreview("40vw")
                                     }
                                 }}
                                 onSearching={(searching) => {
@@ -456,7 +462,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                 <Drawer open={preview !== ""} onClose={() => setPreview("")}>
                     <DrawerContent>
                         <DrawerTitle></DrawerTitle>
-                        <div className="md:h-[85vh] h-[70vh]">
+                        <div className="@md:h-[85vh] h-[70vh]">
                             <iframe
                                 src={
                                     preview.startsWith("/files") ?
@@ -470,6 +476,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: bo
                 </Drawer>
             </div>
             <Sidebar side="right" className="z-30">
+                <SidebarResizeHandle side="right" />
                 {desktopPreview !== "" && (
                     <div className="absolute top-0 left-0 h-[33px] flex justify-center items-center -translate-x-full bg-[#f9f9fa] dark:bg-[#38383d] dark:border-[#0c0c0d] rounded-bl-md border-[#b8b8b8] border-[1px] border-r-0 border-t-0">
                         <StepForward strokeWidth={1} className="w-6 h-6 mx-1 cursor-pointer" onClick={() => {

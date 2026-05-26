@@ -22,6 +22,8 @@ const SIDEBAR_WIDTH = "40vw"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_MIN_WIDTH_PX = 300
+const SIDEBAR_MAX_WIDTH_RATIO = 0.75
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
@@ -31,6 +33,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  sidebarWidth: string
+  setSidebarWidth: (width: string) => void
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -50,6 +54,7 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    onWidthChange?: (width: string) => void
   }
 >(
   (
@@ -57,6 +62,7 @@ const SidebarProvider = React.forwardRef<
       defaultOpen = true,
       open: openProp,
       onOpenChange: setOpenProp,
+      onWidthChange,
       className,
       style,
       children,
@@ -66,6 +72,14 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
+    const [sidebarWidth, _setSidebarWidth] = React.useState(SIDEBAR_WIDTH)
+    const setSidebarWidth = React.useCallback(
+      (width: string) => {
+        _setSidebarWidth(width)
+        onWidthChange?.(width)
+      },
+      [onWidthChange]
+    )
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -122,8 +136,10 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        sidebarWidth,
+        setSidebarWidth,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarWidth]
     )
 
     return (
@@ -132,7 +148,7 @@ const SidebarProvider = React.forwardRef<
           <div
             style={
               {
-                "--sidebar-width": SIDEBAR_WIDTH,
+                "--sidebar-width": sidebarWidth,
                 "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
                 ...style,
               } as React.CSSProperties
@@ -221,7 +237,7 @@ const Sidebar = React.forwardRef<
         {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
-            "duration-200 relative w-[--sidebar-width] bg-transparent transition-[width] ease-linear h-0",
+            "relative w-[--sidebar-width] bg-transparent h-0",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
@@ -231,7 +247,7 @@ const Sidebar = React.forwardRef<
         />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -245,7 +261,7 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className="relative flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
             {children}
           </div>
@@ -310,6 +326,71 @@ const SidebarRail = React.forwardRef<
   )
 })
 SidebarRail.displayName = "SidebarRail"
+
+const SidebarResizeHandle = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div"> & { side?: "left" | "right" }
+>(({ className, side = "right", ...props }, ref) => {
+  const { setSidebarWidth } = useSidebar()
+  const isDragging = React.useRef(false)
+
+  const handleMouseDown = React.useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      isDragging.current = true
+      document.body.style.cursor = "col-resize"
+      document.body.style.userSelect = "none"
+
+      // Prevent iframes from stealing mouse events during drag
+      const iframes = document.querySelectorAll("iframe")
+      iframes.forEach((iframe) => {
+        iframe.style.pointerEvents = "none"
+      })
+
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!isDragging.current) return
+        const windowWidth = window.innerWidth
+        let newWidth: number
+        if (side === "right") {
+          newWidth = windowWidth - e.clientX
+        } else {
+          newWidth = e.clientX
+        }
+        newWidth = Math.max(SIDEBAR_MIN_WIDTH_PX, Math.min(newWidth, windowWidth * SIDEBAR_MAX_WIDTH_RATIO))
+        setSidebarWidth(`${newWidth}px`)
+      }
+
+      const handleMouseUp = () => {
+        isDragging.current = false
+        document.body.style.cursor = ""
+        document.body.style.userSelect = ""
+        iframes.forEach((iframe) => {
+          iframe.style.pointerEvents = ""
+        })
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+      }
+
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+    },
+    [side, setSidebarWidth]
+  )
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "absolute inset-y-0 z-20 w-[4px] cursor-col-resize transition-colors hover:bg-sidebar-border/50 active:bg-sidebar-border",
+        side === "right" ? "left-0" : "right-0",
+        className
+      )}
+      onMouseDown={handleMouseDown}
+      {...props}
+    />
+  )
+})
+SidebarResizeHandle.displayName = "SidebarResizeHandle"
 
 const SidebarInset = React.forwardRef<
   HTMLDivElement,
@@ -754,6 +835,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizeHandle,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
