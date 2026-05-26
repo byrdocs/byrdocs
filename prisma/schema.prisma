@@ -3,7 +3,7 @@
 
 generator client {
   provider = "prisma-client"
-  previewFeatures = ["driverAdapters"]
+
   output   = "../worker/generated/prisma"
 
   runtime                = "workerd"

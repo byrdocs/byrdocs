@@ -1,6 +1,6 @@
 import init from "jieba-wasm";
 
-const WASM_DECODED_SIZE = 3758409;
+const WASM_DECODED_SIZE = 4015140;
 
 let wasmInit: Promise<void> | null = null;
 let wasmReady = false;
@@ -13,7 +13,7 @@ export function setWasmProgressCallback(cb: (received: number, total: number) =>
 export function getWasmInit() {
     if (!wasmInit) {
         wasmInit = (async () => {
-            const response = await fetch("/jieba_rs_wasm_bg_2.2.0.wasm");
+            const response = await fetch("/jieba_rs_wasm_bg_2.4.0.wasm");
             const contentEncoding = response.headers.get("content-encoding");
             const sizeHeader = response.headers.get("content-length");
             const totalSize = contentEncoding
