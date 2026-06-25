@@ -36,6 +36,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       global: "globalThis",
+      BYRDOCS_SITE_URL: JSON.stringify(env.BYRDOCS_SITE_URL),
       PUBLISH_SITE_URL: JSON.stringify(env.PUBLISH_SITE_URL),
       ARCHIVE_REPO_URL: JSON.stringify(env.ARCHIVE_REPO_URL),
     },

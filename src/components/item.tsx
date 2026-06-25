@@ -20,6 +20,7 @@ import { EnlargeIcon, ExternalIcon } from "./icons";
 import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
 
+const downloadUrl = (id: string, filetype: string) => `${BYRDOCS_SITE_URL}/${id}.${filetype}`;
 const url = (_type: string, md5: string, filetype: string) => `/files/${md5}.${filetype}`;
 const preview_url = (md5: string, filename: string) => {
     const base_url = url("preview", md5, "pdf");
@@ -310,7 +311,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             <div>
                                 <ItemTitle
                                     filename={`${item.data.title}.${item.data.filetype}`}
-                                    href={item.url}
+                                    href={downloadUrl(item.id, item.data.filetype)}
                                     external={false}
                                 >
                                     {item.data.title}
@@ -393,7 +394,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                 <div>
                                     <ItemTitle
                                         filename={`${item.data.title}.${item.data.filetype}`}
-                                        href={item.url}
+                                        href={item.data.filetype === 'pdf' ? downloadUrl(item.id, item.data.filetype) : item.url}
                                         external={item.data.filetype!=='pdf'}
                                     >
                                         {item.data.title}
@@ -465,7 +466,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     <div>
                                         <ItemTitle
                                             filename={`${item.data.title}.${item.data.filetype}`}
-                                            href={item.url}
+                                            href={downloadUrl(item.id, item.data.filetype)}
                                             external={false}
                                         >
                                             {item.data.title}
