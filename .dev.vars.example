@@ -1,0 +1,24 @@
+# 第6步得到的 D1 读写 Token
+CLOUDFLARE_D1_TOKEN=
+# 你的 Cloudflare Account Id，可通过命令 `npx wrangler whoami` 查得
+CLOUDFLARE_ACCOUNT_ID=
+# D1 的数据库 ID，在生成数据库时得到，可在 `wrangler.toml` 中找到
+CLOUDFLARE_DATABASE_ID=
+# 自行生成一个字母/数字/符号串，且不少于32字符
+JWT_SECRET=
+# 同上，但不要使用相同的值
+BYRDOCS_SITE_TOKEN=
+# 主站网址，也是你为主站设定的自定义域名，见下文第12步
+BYRDOCS_SITE_URL="https://byrdocs.org"
+# byrdocs-data 存储桶的自定义域名，见“准备 BYR Docs 文件”第7步
+R2_DATA_SITE_URL="https://data.byrdocs.org"
+# BYR Docs Publish 的域名
+PUBLISH_SITE_URL="https://publish.byrdocs.org"
+# BYR Docs Publish 的测试地址
+PUBLISH_DEV_SITE_URL="http://localhost:3000"
+# BYR Docs Wiki 的域名
+WIKI_SITE_URL="https://wiki.byrdocs.org"
+# 测试用的网站域名
+DEV_SITE_URL=
+# 你的 byrdocs-archive 对应的 GitHub 仓库
+ARCHIVE_REPO_URL="https://github.com/byrdocs/byrdocs-archive"
