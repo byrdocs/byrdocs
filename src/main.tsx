@@ -14,6 +14,7 @@ import Notfound from './pages/Notfound';
 import Home from './pages/Home';
 import Loading from './components/loading';
 import { SsrProvider, readSsrBootstrap } from './ssr-context';
+import { ChatBubble } from './components/chat-bubble';
 
 const About = lazy(() => import('./pages/About'))
 const Callback = lazy(() => import('./pages/Callback'))
@@ -71,6 +72,7 @@ const app = (
       <ThemeProvider defaultTheme="system">
         <RouterProvider router={router} />
         <Toaster position="bottom-center" richColors={true} />
+        <ChatBubble />
       </ThemeProvider>
     </SsrProvider>
   </React.StrictMode>
