@@ -38,10 +38,10 @@ export default function About() {
                     </div>
                     <div className="space-y-3 text-xl">
                         <li>
-                            BYR Docs 是一个资料分享平台，旨在使北邮学生更方便地获取与北邮课程有关的教育资源，包括电子书籍、考试题目和复习资料等。
+                            BYR Docs （含<A href="https://wiki.byrdocs.org">维基真题</A>）是一个资料分享平台，旨在使北邮学生更方便地获取与北邮课程有关的教育资源，包括电子书籍、考试题目和复习资料等。
                         </li>
                         <li>
-                            BYR Docs 是一个开源项目，你可以在 <A href="https://github.com/byrdocs" >GitHub</A> 上找到我们的代码和数据。
+                            BYR Docs 是一个开源项目，你可以在 <A href="https://github.com/byrdocs" >GitHub</A> 上找到我们的<A href="https://github.com/byrdocs/byrdocs">代码</A>和<A href="https://github.com/byrdocs/byrdocs-archive">数据</A>。
                         </li>
                         <li>
                             如果您想要贡献文件，请参阅<A href="https://github.com/byrdocs/byrdocs-archive/blob/master/CONTRIBUTING.md">贡献指南</A>。
