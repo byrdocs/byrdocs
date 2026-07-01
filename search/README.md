@@ -62,8 +62,13 @@ pnpm deploy       # wrangler deploy --config ./wrangler.toml
   "keyword": "高等数学",   // 可选：普通词 / ISBN / MD5
   "type": "book",          // 可选：book | doc | test | all（默认 all）
   "jmespath": "[].data.title", // 可选：对结果数组做结构化查询
-  "limit": 10              // 可选：默认 20，最大 100
+  "limit": 10,             // 可选：默认 20，最大 100
+  "shorten": false         // 可选：true 时把结果链接转成 go.byrdocs.org 短链，见下
 }
 ```
 
 响应 `{ total, results }`。非法 JMESPath 返回 `400`。
+
+### 短链接
+
+`shorten: true` 且请求头带 `Authorization: Bearer <token>`（[go.byrdocs.org 短链服务](https://go.byrdocs.org/) 的 token）时，在 `limit` 截断后并发把每个结果的 `url`（及 test 的 `data.wiki.url`）转换为短链再返回，不返回原始链接。相同链接去重；缺 token 或个别转换失败时该条回退原链接（整体仍 `200`）；转换前链接已带 `filename` / `f` 统计参数。MCP 同理，连接时用 `Authorization: Bearer <token>` 头（mcp-remote 的 `--header`）。

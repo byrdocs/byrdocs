@@ -97,6 +97,7 @@
                     <tr><td><code>type</code></td><td>enum?</td><td><code>book</code> / <code>doc</code> / <code>test</code> / <code>all</code>，默认 <code>all</code>。</td></tr>
                     <tr><td><code>jmespath</code></td><td>string?</td><td>JMESPath 表达式，作用于关键词结果数组做结构化查询 / 投影。</td></tr>
                     <tr><td><code>limit</code></td><td>number?</td><td>返回条数上限，默认 20，最大 100。</td></tr>
+                    <tr><td><code>shorten</code></td><td>boolean?</td><td>为 <code>true</code> 时把结果中的链接转换为 go.byrdocs.org 短链后返回（见<a href="#shorten">短链接</a>）。需带 <code>Authorization: Bearer &lt;token&gt;</code>。默认 <code>false</code>。</td></tr>
                 </tbody>
             </table>
             <h3>示例</h3>
@@ -121,6 +122,13 @@
   ]
 }</pre>
             <p class="note">叠加 JMESPath 时，先执行关键词 / 类型过滤，再对结果数组求值；<code>total</code> 为求值后数组的长度，<code>results</code> 为其前 <code>limit</code> 项。非法表达式返回 <code>400</code>。</p>
+
+            <h3 id="shorten">短链接</h3>
+            <p>设 <code>shorten: true</code> 且请求头带 <code>Authorization: Bearer &lt;token&gt;</code>（<code>token</code> 为 <a href="https://go.byrdocs.org/" target="_blank" rel="noopener">go.byrdocs.org 短链服务</a>的 token），则在搜索、JMESPath、<code>limit</code> 全部完成后，把每个结果的 <code>url</code>（及 test 的 <code>data.wiki.url</code>）并发转换为短链后返回，不返回原始链接。相同链接自动去重；转换前的链接已带 <code>filename</code> / <code>f</code> 统计参数，短链跳转仍计入下载统计；缺少 token 或个别链接转换失败时，该条回退为原始链接，整体仍返回 <code>200</code>。</p>
+            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search-byrdocs.youx.am/api/search \
+  <span class="tk-t">-H</span> <span class="tk-s">'content-type: application/json'</span> \
+  <span class="tk-t">-H</span> <span class="tk-s">'authorization: Bearer &lt;token&gt;'</span> \
+  <span class="tk-t">-d</span> <span class="tk-s">'{"keyword":"高等数学","type":"book","shorten":true}'</span></pre>
         </section>
 
         <section id="jmespath" class="section">
@@ -176,7 +184,9 @@
 }</pre>
             <p class="note">支持 Streamable HTTP 的客户端可直接填入端点 URL；其余客户端可用 <code>mcp-remote</code> 桥接。</p>
             <h3>工具 <code>search_files</code></h3>
-            <p>参数与 HTTP API 同构：<code>keyword</code> / <code>type</code> / <code>jmespath</code> / <code>limit</code>，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。<code>jmespath</code> 写法见上方 <a href="#jmespath">JMESPath 查询</a>。</p>
+            <p>参数与 HTTP API 同构：<code>keyword</code> / <code>type</code> / <code>jmespath</code> / <code>limit</code> / <code>shorten</code>，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。<code>jmespath</code> 写法见上方 <a href="#jmespath">JMESPath 查询</a>。</p>
+            <p>使用 <code>shorten</code> 需在连接时通过 HTTP 头 <code>Authorization: Bearer &lt;token&gt;</code> 提供 <a href="https://go.byrdocs.org/" target="_blank" rel="noopener">go.byrdocs.org 短链服务</a> token，语义同上方<a href="#shorten">短链接</a>：</p>
+            <pre class="code host-url"><span class="tk-k">npx</span> mcp-remote https://search-byrdocs.youx.am/mcp <span class="tk-t">--header</span> <span class="tk-s">"Authorization: Bearer &lt;token&gt;"</span></pre>
         </section>
 
         <section id="schema" class="section">

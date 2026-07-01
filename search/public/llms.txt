@@ -29,6 +29,7 @@
 | `type` | `"book"` \| `"doc"` \| `"test"` \| `"all"`? | 限定文件类型，默认 `all`。 |
 | `jmespath` | string? | JMESPath 表达式，作用于关键词 / 类型过滤后的结果数组做结构化查询 / 投影。 |
 | `limit` | number? | 返回条数上限，默认 20，最大 100。 |
+| `shorten` | boolean? | 为 `true` 时把结果中的链接转换为 go.byrdocs.org 短链后返回（见「短链接」）。需在请求头带 `Authorization: Bearer <token>`。默认 `false`。 |
 
 ### 示例
 
@@ -78,6 +79,22 @@ curl -X POST https://search.byrdocs.org/api/search \
 - **ISBN**（13 位，可含连字符）：在 book 的 `data.isbn` 中精确匹配。
 - **MD5**（32 位十六进制，即文件 `id`）：精确匹配单个文件。
 - **留空**：返回全部（配合 `type` / `jmespath` 使用）。
+
+## 短链接（可选）
+
+设 `shorten: true` 且在请求头携带 `Authorization: Bearer <token>`（`token` 为 go.byrdocs.org 短链服务的 token），则在**搜索、JMESPath、limit 全部完成之后**，把返回结果中每个 item 的 `url`（以及 test 的 `data.wiki.url`）并发提交到 `POST https://go.byrdocs.org/api/shorten` 转换为短链，仅返回短链、不返回原始链接。
+
+- 相同链接自动去重，一次查询内每个 URL 只转换一次。
+- 转换前的链接已带 `filename` / `f` 统计参数，短链跳转后仍会计入下载统计。
+- 缺少 token、或个别链接转换失败时，该条**回退为原始链接**，整体仍返回 `200`。
+- 短链服务文档见 <https://go.byrdocs.org/llms.txt>。
+
+```bash
+curl -X POST https://search.byrdocs.org/api/search \
+  -H 'content-type: application/json' \
+  -H 'authorization: Bearer <token>' \
+  -d '{"keyword":"高等数学","type":"book","shorten":true}'
+```
 
 ## JMESPath 查询
 
@@ -131,7 +148,13 @@ curl -X POST https://search.byrdocs.org/api/search \
 
 ### 工具 `search_files`
 
-参数与 HTTP API 同构：`keyword` / `type` / `jmespath` / `limit`，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。
+参数与 HTTP API 同构：`keyword` / `type` / `jmespath` / `limit` / `shorten`，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。
+
+用 `shorten` 时，需在连接 MCP 时通过 HTTP 头 `Authorization: Bearer <token>` 提供 go.byrdocs.org 短链服务 token（语义同 HTTP API 的「短链接」）：
+
+```bash
+npx mcp-remote https://search.byrdocs.org/mcp --header "Authorization: Bearer <token>"
+```
 
 ## 数据结构
 

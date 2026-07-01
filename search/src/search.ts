@@ -13,6 +13,8 @@ export interface SearchParams {
     jmespath?: string;
     type?: SearchCategory;
     limit?: number;
+    shorten?: boolean;
+    shortenToken?: string;
 }
 
 export interface SearchResult {
@@ -148,6 +150,73 @@ function applyJmespath(results: Item[], expression: string): unknown[] {
     return [projected];
 }
 
+const SHORTEN_ENDPOINT = "https://go.byrdocs.org/api/shorten";
+
+function isItem(value: unknown): value is Item {
+    return (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value) &&
+        "type" in value &&
+        "data" in value &&
+        "url" in value
+    );
+}
+
+async function shortenUrl(url: string, token: string): Promise<string | null> {
+    try {
+        const res = await fetch(SHORTEN_ENDPOINT, {
+            method: "POST",
+            headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+            body: JSON.stringify({ url }),
+        });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { short_url?: unknown };
+        return typeof data.short_url === "string" ? data.short_url : null;
+    } catch {
+        return null;
+    }
+}
+
+async function shortenResults(results: unknown[], token: string): Promise<unknown[]> {
+    const urls = new Set<string>();
+    for (const item of results) {
+        if (!isItem(item)) continue;
+        if (item.url) urls.add(item.url);
+        if (item.type === "test" && item.data.filetype === "pdf" && item.data.wiki?.url) {
+            urls.add(item.data.wiki.url);
+        }
+    }
+    if (urls.size === 0) return results;
+
+    const entries = await Promise.all(
+        [...urls].map(async (u) => [u, await shortenUrl(u, token)] as const),
+    );
+    const map = new Map<string, string>();
+    for (const [orig, short] of entries) {
+        if (short) map.set(orig, short);
+    }
+    if (map.size === 0) return results;
+
+    return results.map((item) => {
+        if (!isItem(item)) return item;
+        const url = item.url && map.has(item.url) ? map.get(item.url)! : item.url;
+        if (
+            item.type === "test" &&
+            item.data.filetype === "pdf" &&
+            item.data.wiki?.url &&
+            map.has(item.data.wiki.url)
+        ) {
+            return {
+                ...item,
+                url,
+                data: { ...item.data, wiki: { ...item.data.wiki, url: map.get(item.data.wiki.url)! } },
+            };
+        }
+        return { ...item, url };
+    });
+}
+
 export async function runSearch(env: Env, params: SearchParams): Promise<SearchResult> {
     const { documents, minisearch } = await loadCache(env);
     const keyword = (params.keyword ?? "").trim();
@@ -184,5 +253,9 @@ export async function runSearch(env: Env, params: SearchParams): Promise<SearchR
     }
 
     const limit = Math.min(Math.max(params.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
-    return { total: output.length, results: output.slice(0, limit) };
+    let finalResults = output.slice(0, limit);
+    if (params.shorten && params.shortenToken) {
+        finalResults = await shortenResults(finalResults, params.shortenToken);
+    }
+    return { total: output.length, results: finalResults };
 }

@@ -14,19 +14,27 @@ const searchSchema = z.object({
     jmespath: z.string().optional(),
     type: z.enum(["book", "doc", "test", "all"]).optional(),
     limit: z.number().int().min(1).max(100).optional(),
+    shorten: z.boolean().optional(),
 });
+
+function extractBearer(header: string | undefined): string | undefined {
+    if (!header) return undefined;
+    const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+    return match ? match[1].trim() : undefined;
+}
 
 app.use("/api/*", cors({
     origin: "*",
     allowMethods: ["POST", "OPTIONS"],
-    allowHeaders: ["Content-Type"],
+    allowHeaders: ["Content-Type", "Authorization"],
     maxAge: 86400,
 }));
 
 app.post("/api/search", zValidator("json", searchSchema), async (c) => {
     const params = c.req.valid("json");
+    const shortenToken = extractBearer(c.req.header("authorization"));
     try {
-        const result = await runSearch(c.env, params);
+        const result = await runSearch(c.env, { ...params, shortenToken });
         return c.json(result);
     } catch (error) {
         if (error instanceof InvalidJmespathError) {
@@ -38,7 +46,8 @@ app.post("/api/search", zValidator("json", searchSchema), async (c) => {
 });
 
 app.all("/mcp", async (c) => {
-    const server = buildMcpServer(c.env);
+    const shortenToken = extractBearer(c.req.header("authorization"));
+    const server = buildMcpServer(c.env, shortenToken);
     const transport = new StreamableHTTPTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,

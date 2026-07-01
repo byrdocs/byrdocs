@@ -16,6 +16,9 @@ const TOOL_DESCRIPTION = `搜索 BYR Docs（北邮资料共享站）收录的文
 ## type
 限定文件类型：book | doc | test | all（默认 all）。
 
+## shorten（可选，短链接）
+设为 true 时，把返回结果中的 url（以及 test 的 data.wiki.url）转换为 go.byrdocs.org 短链后返回，不返回原始链接。需在连接 MCP 时通过 HTTP 头 Authorization: Bearer <token> 提供 go.byrdocs.org 短链服务的 token（mcp-remote 用 --header 传入）。缺少 token 或个别链接转换失败时，该条回退为原始链接。相同链接自动去重。转换发生在 limit 截断之后、且原链接已带 filename/f 统计参数。默认 false。
+
 ## 返回结构
 工具返回 JSON 文本：{ total: number, results: Item[] }。
 - total：JMESPath 求值后数组的长度（未截断）。
@@ -110,9 +113,10 @@ const inputSchema = {
     jmespath: z.string().optional().describe("JMESPath 表达式，作用于结果数组做结构化查询/投影"),
     type: z.enum(["book", "doc", "test", "all"]).optional().describe("限定文件类型，默认 all"),
     limit: z.number().int().min(1).max(100).optional().describe("返回条数上限，默认 20，最大 100"),
+    shorten: z.boolean().optional().describe("设为 true 且连接时提供了 Authorization: Bearer <token>（go.byrdocs.org 短链服务 token），则把结果中的 url（及 test 的 data.wiki.url）转换为短链后返回；缺少 token 或转换失败的链接回退为原始链接。默认 false"),
 };
 
-export function buildMcpServer(env: Env): McpServer {
+export function buildMcpServer(env: Env, shortenToken?: string): McpServer {
     const server = new McpServer({
         name: "byrdocs-search",
         version: "1.0.0",
@@ -125,9 +129,9 @@ export function buildMcpServer(env: Env): McpServer {
             description: TOOL_DESCRIPTION,
             inputSchema,
         },
-        async ({ keyword, jmespath, type, limit }) => {
+        async ({ keyword, jmespath, type, limit, shorten }) => {
             try {
-                const result = await runSearch(env, { keyword, jmespath, type, limit });
+                const result = await runSearch(env, { keyword, jmespath, type, limit, shorten, shortenToken });
                 return {
                     content: [{ type: "text", text: JSON.stringify(result) }],
                 };
