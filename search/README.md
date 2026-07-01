@@ -6,11 +6,11 @@ BYR Docs 文件搜索服务，一个独立的 Cloudflare Worker，提供三件�
 - **MCP server** — `/mcp`（无状态 Streamable HTTP），供 Claude Desktop 等 AI 客户端调用。
 - **文档首页** — `/`，带交互式 playground 的 API / MCP 文档；`/llms.txt` 为面向 LLM 的纯文本文档。
 
-线上地址：<https://search.byrdocs.org>（同时可用 <https://search-byrdocs.youx.am>）。
+线上地址：<https://search.byrdocs.org>。
 
 ## 工作原理
 
-数据来自公开静态文件，无需认证、不绑定 R2/D1：
+数据来自公开静态文件：
 
 - `metadata.json`（教材 / 资料 / 试题元数据）
 - `wiki.json`（wiki 试题）
@@ -55,7 +55,7 @@ pnpm deploy       # wrangler deploy --config ./wrangler.toml
 
 ## API
 
-见 [`/llms.txt`](public/llms.txt) 或线上文档首页。请求体：
+见 [`/llms.txt`](public/llms.txt) 或 https://search.byrdocs.org 。请求体：
 
 ```jsonc
 {
@@ -67,18 +67,3 @@ pnpm deploy       # wrangler deploy --config ./wrangler.toml
 ```
 
 响应 `{ total, results }`。非法 JMESPath 返回 `400`。
-
-## 部署说明
-
-- 部署在 **youx.am** Cloudflare 账户，自定义域名 `search-byrdocs.youx.am`。
-- `search.byrdocs.org` 属于另一个账户（byrdocs.org），通过 Cloudflare for SaaS 自定义主机名 + youx.am zone 内的 Worker Route（`pattern = "search.byrdocs.org/*"`）接入，Worker Route 优先级高于 fallback origin。
-
-### jieba-wasm 导入（易踩）
-
-JS glue 用包导出路径，wasm 二进制用相对路径（specifier 以 `.wasm` 结尾才会触发 wrangler 的 wasm loader，不能用 alias）：
-
-```ts
-import { initSync, cut_for_search } from "jieba-wasm/web";
-import wasm from "../node_modules/jieba-wasm/pkg/web/jieba_rs_wasm_bg.wasm";
-initSync({ module: wasm });
-```
