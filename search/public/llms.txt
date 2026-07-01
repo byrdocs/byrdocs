@@ -1,0 +1,210 @@
+# BYR Docs 搜索 API & MCP
+
+> BYR Docs文件搜索服务。检索收录的教材（book）、资料（doc）、试题（test），提供 HTTP API 与 MCP server 两种接入方式。
+
+- HTTP API：`POST https://search.byrdocs.org/api/search`
+- MCP（Streamable HTTP）：`https://search.byrdocs.org/mcp`
+- 文档首页：https://search.byrdocs.org/
+- 源码：https://github.com/byrdocs/byrdocs/tree/main/search
+
+## 工作流程
+
+一次查询按顺序执行三步：
+
+1. **keyword / type 过滤**：先按关键词与类型筛出结果数组。
+2. **JMESPath 求值（可选）**：对上一步的结果数组做结构化查询 / 投影。
+3. **limit 截断**：取前 `limit` 项返回。
+
+响应中的 `total` 为 JMESPath 求值后数组的长度，`results` 为其前 `limit` 项。
+
+## HTTP API
+
+仅支持 `POST`，请求体为 JSON。跨域开放（`Access-Control-Allow-Origin: *`）。
+
+### 请求参数
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `keyword` | string? | 关键词。普通词做中文分词检索；ISBN（13 位）/ MD5（32 位十六进制）做精确匹配；留空则不按关键词过滤。 |
+| `type` | `"book"` \| `"doc"` \| `"test"` \| `"all"`? | 限定文件类型，默认 `all`。 |
+| `jmespath` | string? | JMESPath 表达式，作用于关键词 / 类型过滤后的结果数组做结构化查询 / 投影。 |
+| `limit` | number? | 返回条数上限，默认 20，最大 100。 |
+
+### 示例
+
+```bash
+curl -X POST https://search.byrdocs.org/api/search \
+  -H 'content-type: application/json' \
+  -d '{"keyword":"高等数学","type":"book","limit":5}'
+```
+
+叠加 JMESPath：
+
+```bash
+curl -X POST https://search.byrdocs.org/api/search \
+  -H 'content-type: application/json' \
+  -d '{"keyword":"高等数学","jmespath":"[].data.title"}'
+```
+
+### 响应
+
+```json
+{
+  "total": 42,
+  "results": [
+    {
+      "type": "book",
+      "id": "<md5>",
+      "url": "https://byrdocs.org/files/<md5>.pdf",
+      "data": {
+        "title": "高等数学",
+        "authors": ["同济大学数学系"],
+        "isbn": ["..."],
+        "filetype": "pdf"
+      }
+    }
+  ]
+}
+```
+
+### 错误
+
+- 非法 JMESPath 表达式 → `400`：`{ "error": "invalid_jmespath", "message": "..." }`
+- 内部错误 → `500`：`{ "error": "internal_error", "message": "..." }`
+
+## keyword 匹配规则
+
+- **普通词**：中文分词（jieba）后按相关度检索标题、作者、译者、出版社、课程名等字段，多词 AND。
+- **ISBN**（13 位，可含连字符）：在 book 的 `data.isbn` 中精确匹配。
+- **MD5**（32 位十六进制，即文件 `id`）：精确匹配单个文件。
+- **留空**：返回全部（配合 `type` / `jmespath` 使用）。
+
+## JMESPath 查询
+
+[JMESPath](https://jmespath.org) 是一种 JSON 查询语言，作用于关键词 / 类型过滤后的**结果数组**——数组每一项形如 `{ type, id, url, data }`。可用它做过滤、字段投影、排序、计数等。执行顺序：`keyword` / `type` 过滤 → JMESPath 求值 → `limit` 截断；`total` 为求值后数组长度。
+
+### 语法约定（易错，务必遵守）
+
+- 嵌套字段用点号：`data.title`、`data.course.name`、`data.time.stage`。
+- 字符串字面量用**单引号**：`'book'`、`'期末'`。
+- 数字 / 布尔 / null 用**反引号**包裹：`` `10000000` ``、`` `true` ``、`` `null` ``（不要给数字加引号）。
+- 过滤 `[?表达式]`：对每项求布尔值并保留为真者；比较 `==` `!=` `<` `<=` `>` `>=`；逻辑 `&&` `||` `!`。
+- 投影 `[].field` 展开数组取字段；multiselect `[].{a: x, b: y}` 把每项重组为新对象。
+- 管道 `|` 把左侧结果作为右侧表达式的新输入。
+- 切片 `[0:5]`、`[:10]`、`[::-1]`；索引 `[0]`；`@` 表示当前元素。
+
+### 示例
+
+- `[].data.title` — 取每项标题，得到字符串数组。
+- `[].{title: data.title, url: url}` — 每项重组为 `{title, url}`。
+- `[?type=='book']` — 只保留 book。
+- `[?type=='book'].data.title` — 过滤后再投影书名。
+- `[?data.publish_year >= '2020']` — 字符串比较（`publish_year` 为字符串）。
+- ``[?data.filesize > `10000000`]`` — 数字比较（> 10MB），数字用反引号。
+- `[?type=='test' && data.time.stage=='期末']` — 逻辑与。
+- `[?contains(data.title, '高等数学')]` — 函数：标题包含子串。
+- `[0:5]` / `[:10]` / `[::-1]` — 切片 / 反转。
+- `length([?type=='book'])` — 计数。
+- `[?type=='book'] | [0:3]` — 先过滤再取前 3 个。
+- `sort_by([], &data.publish_year) | reverse(@)` — 按出版年排序后倒序。
+
+常用函数：`length`、`contains`、`starts_with`、`ends_with`、`sort_by`、`max_by` / `min_by`、`reverse`、`keys`、`to_number`。完整规范见 https://jmespath.org/specification.html
+
+## MCP
+
+无状态 Streamable HTTP，端点 `https://search.byrdocs.org/mcp`，公开免认证。
+
+### Claude Desktop 配置
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://search.byrdocs.org/mcp"]
+    }
+  }
+}
+```
+
+支持 Streamable HTTP 的客户端可直接填入端点 URL；其余客户端可用 `mcp-remote` 桥接。
+
+### 工具 `search_files`
+
+参数与 HTTP API 同构：`keyword` / `type` / `jmespath` / `limit`，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。
+
+## 数据结构
+
+每个结果是一个 item，结构为 `{ type, id, url, data }`。`id` 为文件 MD5（wiki 条目为 `"wiki-N"`）；`url` 为下载 / 查看地址（`/files/` 下载链接已含统计参数 `filename`、`f`，wiki 外链已做 percent-encode）。`data` 随 `type` 分为三类：
+
+### book
+
+```typescript
+type BookItem = {
+  type: "book"
+  id: string            // 文件 MD5
+  url: string           // 下载链接（已含统计参数）
+  data: {
+    title: string
+    authors: string[]
+    translators?: string[]
+    edition?: string
+    publisher?: string
+    publish_year?: string
+    isbn: string[]
+    filetype: "pdf"
+    filesize?: number     // 字节
+  }
+}
+```
+
+### doc
+
+```typescript
+type DocItem = {
+  type: "doc"
+  id: string
+  url: string
+  data: {
+    title: string
+    filetype: "pdf" | "zip"
+    course: {
+      type?: "本科" | "研究生"
+      name?: string
+    }[]
+    content: ("思维导图" | "题库" | "答案" | "知识点" | "课件")[]
+    filesize?: number
+  }
+}
+```
+
+### test
+
+```typescript
+type TestItem = {
+  type: "test"
+  id: string            // 文件 MD5；wiki 条目为 "wiki-N"
+  url: string
+  data: {
+    title: string        // 自动拼接：年份+学期+课程+(阶段)+试卷/答案
+    college?: string[]
+    course: {
+      type?: "本科" | "研究生"
+      name: string
+    }
+    time: {
+      start: string
+      end: string
+      semester?: "First" | "Second"
+      stage?: "期中" | "期末"
+    }
+    content: ("原题" | "答案")[]
+    filetype: "pdf" | "wiki"
+    filesize?: number      // wiki 条目无此字段
+    wiki?: {              // 关联 wiki（部分 pdf 试卷有）
+      url: string
+      data: WikiTest       // 结构同上，filetype 为 "wiki"
+    }
+  }
+}
+```

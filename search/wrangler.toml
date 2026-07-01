@@ -1,0 +1,26 @@
+"$schema" = "node_modules/wrangler/config-schema.json"
+name = "byrdocs-search"
+main = "src/index.ts"
+compatibility_date = "2025-08-31"
+account_id = "d7d45e21d8af58b7a58d2fb1318805ad"
+
+[observability]
+enabled = true
+
+[vars]
+DATA_URL = "https://data.byrdocs.org/metadata.json"
+WIKI_URL = "https://wiki.byrdocs.org/wiki.json"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/mcp"]
+
+[[routes]]
+pattern = "search-byrdocs.youx.am"
+custom_domain = true
+
+[[routes]]
+pattern = "search.byrdocs.org/*"
+zone_name = "youx.am"

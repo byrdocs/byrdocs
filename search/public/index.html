@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYR Docs 搜索 · API & MCP</title>
+    <meta name="description" content="BYR Docs 文件搜索服务：提供 HTTP API 与 MCP server，支持关键词检索与 JMESPath 结构化查询。">
+    <link rel="icon" type="image/png" href="/logo_512.png">
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <header class="hero">
+        <div class="hero-inner">
+            <img class="logo" src="/logo_512.png" alt="BYR Docs" width="56" height="56">
+            <h1>BYR Docs 搜索</h1>
+            <p class="lead">搜索 BYR Docs 中教材、资料与试题的 API / MCP。</p>
+            <div class="hero-links">
+                <a href="/llms.txt">llms.txt</a>
+                <a href="https://github.com/byrdocs/byrdocs/tree/main/search" target="_blank" rel="noopener">GitHub</a>
+            </div>
+            <div class="endpoints">
+                <code class="host-url">POST https://search.byrdocs.org/api/search</code>
+                <code class="host-url">MCP https://search.byrdocs.org/mcp</code>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="playground" class="section">
+            <h2>试一试</h2>
+            <div class="playground">
+                <form id="search-form" class="pg-form">
+                    <label class="field">
+                        <span>关键词 <em>keyword</em></span>
+                        <input type="text" id="f-keyword" placeholder="高等数学 / ISBN / 文件 MD5" autocomplete="off">
+                    </label>
+                    <div class="field-row">
+                        <label class="field">
+                            <span>类型 <em>type</em></span>
+                            <select id="f-type">
+                                <option value="all">all</option>
+                                <option value="book">book</option>
+                                <option value="doc">doc</option>
+                                <option value="test">test</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>条数 <em>limit</em></span>
+                            <input type="number" id="f-limit" min="1" max="100" value="10">
+                        </label>
+                    </div>
+                    <label class="field">
+                        <span>JMESPath <em>可选</em></span>
+                        <input type="text" id="f-jmespath" placeholder="[].data.title" autocomplete="off" spellcheck="false">
+                    </label>
+                    <div class="pg-actions">
+                        <button type="submit" id="run-btn">搜索</button>
+                        <span class="hint" id="pg-hint"></span>
+                    </div>
+                    <div class="examples">
+                        <span>示例：</span>
+                        <button type="button" class="chip" data-k="高等数学" data-t="book" data-j="">高等数学教材</button>
+                        <button type="button" class="chip" data-k="高等数学" data-t="all" data-j="[].data.title">只取标题</button>
+                        <button type="button" class="chip" data-k="" data-t="test" data-j="[?data.time.stage=='期末'] | [0:5]">期末试题</button>
+                    </div>
+                    <div class="curl-preview">
+                        <div class="curl-head">
+                            <span>curl 命令</span>
+                            <button type="button" id="copy-curl" class="ghost">复制</button>
+                        </div>
+                        <pre id="curl-cmd" class="code"></pre>
+                    </div>
+                </form>
+                <div class="pg-result">
+                    <div class="pg-result-head">
+                        <span id="result-summary">结果将显示在这里</span>
+                        <button type="button" id="toggle-json" class="ghost" hidden>查看原始 JSON</button>
+                    </div>
+                    <div id="result-cards" class="cards"></div>
+                    <pre id="result-json" class="json" hidden></pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="http-api" class="section">
+            <h2>HTTP API</h2>
+            <p>仅支持 <code>POST</code>，请求体为 JSON。跨域开放（<code>Access-Control-Allow-Origin: *</code>）。</p>
+            <h3>请求参数</h3>
+            <table class="params">
+                <thead>
+                    <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>keyword</code></td><td>string?</td><td>关键词。普通词做分词检索；ISBN / 32 位 MD5 做精确匹配；留空则不过滤。</td></tr>
+                    <tr><td><code>type</code></td><td>enum?</td><td><code>book</code> / <code>doc</code> / <code>test</code> / <code>all</code>，默认 <code>all</code>。</td></tr>
+                    <tr><td><code>jmespath</code></td><td>string?</td><td>JMESPath 表达式，作用于关键词结果数组做结构化查询 / 投影。</td></tr>
+                    <tr><td><code>limit</code></td><td>number?</td><td>返回条数上限，默认 20，最大 100。</td></tr>
+                </tbody>
+            </table>
+            <h3>示例</h3>
+            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search-byrdocs.youx.am/api/search \
+  <span class="tk-t">-H</span> <span class="tk-s">'content-type: application/json'</span> \
+  <span class="tk-t">-d</span> <span class="tk-s">'{"keyword":"高等数学","type":"book","limit":5}'</span></pre>
+            <h3>响应</h3>
+            <pre class="code">{
+  <span class="tk-k">"total"</span>: <span class="tk-n">42</span>,
+  <span class="tk-k">"results"</span>: [
+    {
+      <span class="tk-k">"type"</span>: <span class="tk-s">"book"</span>,
+      <span class="tk-k">"id"</span>: <span class="tk-s">"&lt;md5&gt;"</span>,
+      <span class="tk-k">"url"</span>: <span class="tk-s">"https://byrdocs.org/files/&lt;md5&gt;.pdf"</span>,
+      <span class="tk-k">"data"</span>: {
+        <span class="tk-k">"title"</span>: <span class="tk-s">"高等数学"</span>,
+        <span class="tk-k">"authors"</span>: [<span class="tk-s">"同济大学数学系"</span>],
+        <span class="tk-k">"isbn"</span>: [<span class="tk-s">"..."</span>],
+        <span class="tk-k">"filetype"</span>: <span class="tk-s">"pdf"</span>
+      }
+    }
+  ]
+}</pre>
+            <p class="note">叠加 JMESPath 时，先执行关键词 / 类型过滤，再对结果数组求值；<code>total</code> 为求值后数组的长度，<code>results</code> 为其前 <code>limit</code> 项。非法表达式返回 <code>400</code>。</p>
+        </section>
+
+        <section id="jmespath" class="section">
+            <h2>JMESPath 查询</h2>
+            <p><a href="https://jmespath.org" target="_blank" rel="noopener">JMESPath</a> 是一种 JSON 查询语言，作用于<strong>关键词 / 类型过滤后的结果数组</strong>——数组每一项形如 <code>{ type, id, url, data }</code>。可用它做过滤、字段投影、排序、计数等。执行顺序：<code>keyword</code> / <code>type</code> 过滤 → JMESPath 求值 → <code>limit</code> 截断，<code>total</code> 为求值后数组长度。</p>
+
+            <h3>语法约定</h3>
+            <table class="params">
+                <thead>
+                    <tr><th>写法</th><th>含义</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>data.title</code></td><td>用点号访问嵌套字段</td></tr>
+                    <tr><td><code>'book'</code></td><td>字符串字面量用<strong>单引号</strong></td></tr>
+                    <tr><td><code>`2020`</code></td><td>数字 / 布尔 / null 等用<strong>反引号</strong>包裹</td></tr>
+                    <tr><td><code>[?…]</code></td><td>过滤：对数组每一项求布尔表达式，保留为真的项</td></tr>
+                    <tr><td><code>[]</code></td><td>展开数组，配合 <code>.field</code> 做投影</td></tr>
+                    <tr><td><code>{a: x, b: y}</code></td><td>multiselect：把每项重组为新对象</td></tr>
+                    <tr><td><code>@</code></td><td>当前元素（整个数组或迭代项）</td></tr>
+                    <tr><td><code>|</code></td><td>管道：把左侧结果作为右侧表达式的新输入</td></tr>
+                </tbody>
+            </table>
+
+            <h3>示例</h3>
+            <ul class="examples-list">
+                <li><code>[].data.title</code> — 投影：取每一项的标题，得到字符串数组</li>
+                <li><code>[].{title: data.title, url: url}</code> — 每项重组为 <code>{title, url}</code></li>
+                <li><code>[?type=='book']</code> — 只保留 book</li>
+                <li><code>[?type=='book'].data.title</code> — 过滤后再投影书名</li>
+                <li><code>[?data.publish_year &gt;= '2020']</code> — 字符串比较（<code>publish_year</code> 为字符串）</li>
+                <li><code>[?data.filesize &gt; `10000000`]</code> — 数字比较（&gt; 10MB），数字用反引号</li>
+                <li><code>[?type=='test' &amp;&amp; data.time.stage=='期末']</code> — 逻辑与 <code>&amp;&amp;</code>（另有 <code>||</code>、<code>!</code>）</li>
+                <li><code>[?contains(data.title, '高等数学')]</code> — 函数：标题包含子串</li>
+                <li><code>[0:5]</code> / <code>[:10]</code> / <code>[::-1]</code> — 切片 / 反转</li>
+                <li><code>length([?type=='book'])</code> — 计数</li>
+                <li><code>[?type=='book'] | [0:3]</code> — 管道：先过滤，再取前 3 个</li>
+                <li><code>sort_by([], &amp;data.publish_year) | reverse(@)</code> — 按出版年排序后倒序</li>
+            </ul>
+            <p class="note">常用函数：<code>length</code>、<code>contains</code>、<code>starts_with</code>、<code>ends_with</code>、<code>sort_by</code>、<code>max_by</code> / <code>min_by</code>、<code>reverse</code>、<code>keys</code>、<code>to_number</code>。完整规范见 <a href="https://jmespath.org/specification.html" target="_blank" rel="noopener">JMESPath Specification</a>。</p>
+        </section>
+
+        <section id="mcp" class="section">
+            <h2>MCP</h2>
+            <p>无状态 Streamable HTTP，端点 <code class="host-url">https://search-byrdocs.youx.am/mcp</code>，公开免认证。</p>
+            <h3>Claude Desktop 配置</h3>
+            <pre class="code host-url">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: {
+      <span class="tk-k">"command"</span>: <span class="tk-s">"npx"</span>,
+      <span class="tk-k">"args"</span>: [<span class="tk-s">"-y"</span>, <span class="tk-s">"mcp-remote"</span>, <span class="tk-s">"https://search-byrdocs.youx.am/mcp"</span>]
+    }
+  }
+}</pre>
+            <p class="note">支持 Streamable HTTP 的客户端可直接填入端点 URL；其余客户端可用 <code>mcp-remote</code> 桥接。</p>
+            <h3>工具 <code>search_files</code></h3>
+            <p>参数与 HTTP API 同构：<code>keyword</code> / <code>type</code> / <code>jmespath</code> / <code>limit</code>，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。<code>jmespath</code> 写法见上方 <a href="#jmespath">JMESPath 查询</a>。</p>
+        </section>
+
+        <section id="schema" class="section">
+            <h2>数据结构</h2>
+            <p>每个搜索结果是一个 item，字段以 TypeScript 类型给出如下——<code>data</code> 随 <code>type</code> 分为 book / doc / test 三种，点击标签切换查看：</p>
+            <div class="tabs" id="schema-tabs">
+                <div class="tab-bar" role="tablist">
+                    <button type="button" class="tab active" data-tab="book">book</button>
+                    <button type="button" class="tab" data-tab="doc">doc</button>
+                    <button type="button" class="tab" data-tab="test">test</button>
+                </div>
+                <pre class="code tab-panel" data-panel="book">{
+  <span class="tk-k">type</span>: <span class="tk-s">"book"</span>
+  <span class="tk-k">id</span>: <span class="tk-t">string</span>            <span class="tk-c">// 文件 MD5</span>
+  <span class="tk-k">url</span>: <span class="tk-t">string</span>            <span class="tk-c">// 下载链接（已含统计参数）</span>
+  <span class="tk-k">data</span>: {
+    <span class="tk-k">title</span>: <span class="tk-t">string</span>
+    <span class="tk-k">authors</span>: <span class="tk-t">string</span>[]
+    <span class="tk-k">translators</span>?: <span class="tk-t">string</span>[]
+    <span class="tk-k">edition</span>?: <span class="tk-t">string</span>
+    <span class="tk-k">publisher</span>?: <span class="tk-t">string</span>
+    <span class="tk-k">publish_year</span>?: <span class="tk-t">string</span>
+    <span class="tk-k">isbn</span>: <span class="tk-t">string</span>[]
+    <span class="tk-k">filetype</span>: <span class="tk-s">"pdf"</span>
+    <span class="tk-k">filesize</span>?: <span class="tk-t">number</span>       <span class="tk-c">// 字节</span>
+  }
+}</pre>
+                <pre class="code tab-panel" data-panel="doc" hidden>{
+  <span class="tk-k">type</span>: <span class="tk-s">"doc"</span>
+  <span class="tk-k">id</span>: <span class="tk-t">string</span>
+  <span class="tk-k">url</span>: <span class="tk-t">string</span>
+  <span class="tk-k">data</span>: {
+    <span class="tk-k">title</span>: <span class="tk-t">string</span>
+    <span class="tk-k">filetype</span>: <span class="tk-s">"pdf"</span> <span class="tk-p">|</span> <span class="tk-s">"zip"</span>
+    <span class="tk-k">course</span>: {
+      <span class="tk-k">type</span>?: <span class="tk-s">"本科"</span> <span class="tk-p">|</span> <span class="tk-s">"研究生"</span>
+      <span class="tk-k">name</span>?: <span class="tk-t">string</span>
+    }[]
+    <span class="tk-k">content</span>: (<span class="tk-s">"思维导图"</span> <span class="tk-p">|</span> <span class="tk-s">"题库"</span> <span class="tk-p">|</span> <span class="tk-s">"答案"</span> <span class="tk-p">|</span> <span class="tk-s">"知识点"</span> <span class="tk-p">|</span> <span class="tk-s">"课件"</span>)[]
+    <span class="tk-k">filesize</span>?: <span class="tk-t">number</span>
+  }
+}</pre>
+                <pre class="code tab-panel" data-panel="test" hidden>{
+  <span class="tk-k">type</span>: <span class="tk-s">"test"</span>
+  <span class="tk-k">id</span>: <span class="tk-t">string</span>            <span class="tk-c">// 文件 MD5；wiki 条目为 "wiki-N"</span>
+  <span class="tk-k">url</span>: <span class="tk-t">string</span>
+  <span class="tk-k">data</span>: {
+    <span class="tk-k">title</span>: <span class="tk-t">string</span>        <span class="tk-c">// 自动拼接：年份+学期+课程+(阶段)+试卷/答案</span>
+    <span class="tk-k">college</span>?: <span class="tk-t">string</span>[]
+    <span class="tk-k">course</span>: {
+      <span class="tk-k">type</span>?: <span class="tk-s">"本科"</span> <span class="tk-p">|</span> <span class="tk-s">"研究生"</span>
+      <span class="tk-k">name</span>: <span class="tk-t">string</span>
+    }
+    <span class="tk-k">time</span>: {
+      <span class="tk-k">start</span>: <span class="tk-t">string</span>
+      <span class="tk-k">end</span>: <span class="tk-t">string</span>
+      <span class="tk-k">semester</span>?: <span class="tk-s">"First"</span> <span class="tk-p">|</span> <span class="tk-s">"Second"</span>
+      <span class="tk-k">stage</span>?: <span class="tk-s">"期中"</span> <span class="tk-p">|</span> <span class="tk-s">"期末"</span>
+    }
+    <span class="tk-k">content</span>: (<span class="tk-s">"原题"</span> <span class="tk-p">|</span> <span class="tk-s">"答案"</span>)[]
+    <span class="tk-k">filetype</span>: <span class="tk-s">"pdf"</span> <span class="tk-p">|</span> <span class="tk-s">"wiki"</span>
+    <span class="tk-k">filesize</span>?: <span class="tk-t">number</span>      <span class="tk-c">// wiki 条目无此字段</span>
+    <span class="tk-k">wiki</span>?: {              <span class="tk-c">// 关联 wiki（部分 pdf 试卷有）</span>
+      <span class="tk-k">url</span>: <span class="tk-t">string</span>
+      <span class="tk-k">data</span>: <span class="tk-t">WikiTest</span>     <span class="tk-c">// 结构同上，filetype 为 "wiki"</span>
+    }
+  }
+}</pre>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>BYR Docs · <a href="https://byrdocs.org">byrdocs.org</a></span>
+    </footer>
+
+    <script src="/app.js"></script>
+</body>
+
+</html>

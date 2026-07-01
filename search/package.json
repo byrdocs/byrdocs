@@ -1,0 +1,27 @@
+{
+  "name": "byrdocs-search",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --config ./wrangler.toml",
+    "deploy": "wrangler deploy --config ./wrangler.toml",
+    "typecheck": "tsc --noEmit",
+    "cf-typegen": "wrangler types --config ./wrangler.toml"
+  },
+  "dependencies": {
+    "@hono/mcp": "^0.3.0",
+    "@hono/zod-validator": "^0.7.6",
+    "@jmespath-community/jmespath": "^1.3.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "hono": "4.12.23",
+    "jieba-wasm": "^2.4.0",
+    "minisearch": "^7.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260526.1",
+    "typescript": "~5.8.3",
+    "wrangler": "^4.94.0"
+  }
+}
