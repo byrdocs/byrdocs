@@ -16,15 +16,65 @@ const TOOL_DESCRIPTION = `搜索 BYR Docs（北邮资料共享站）收录的文
 ## type
 限定文件类型：book | doc | test | all（默认 all）。
 
-## 返回的 item 结构
-每个结果形如 { type, id, url, data }：
-- type: "book" | "doc" | "test"
-- id: 文件 md5（wiki 类为 "wiki-N"）
-- url: 文件下载/查看地址
-- data 因 type 而异：
-  - book: { title, authors[], translators?[], edition?, publisher?, publish_year?, isbn[], filetype:"pdf", filesize? }
-  - doc:  { title, filetype:"pdf"|"zip", course:[{type?,name?}], content:[...], filesize? }
-  - test: { title, college?[], course:{type?,name}, time:{start,end,semester?,stage?}, content:[...], filetype:"pdf", filesize, wiki?:{url,data} }
+## 返回结构
+工具返回 JSON 文本：{ total: number, results: Item[] }。
+- total：JMESPath 求值后数组的长度（未截断）。
+- results：其前 limit 项。
+- 每个 Item 形如 { type, id, url, data }：id 为文件 MD5（wiki 条目为 "wiki-N"）；url 为下载/查看地址（/files/ 下载链接已含统计参数 filename、f，wiki 外链已 percent-encode，可直接使用）；data 随 type 分为三类：
+
+type BookItem = {
+  type: "book"
+  id: string                 // 文件 MD5
+  url: string                // 下载链接（已含统计参数）
+  data: {
+    title: string
+    authors: string[]
+    translators?: string[]
+    edition?: string
+    publisher?: string
+    publish_year?: string    // 字符串，比较时用单引号
+    isbn: string[]
+    filetype: "pdf"
+    filesize?: number        // 字节
+  }
+}
+
+type DocItem = {
+  type: "doc"
+  id: string
+  url: string
+  data: {
+    title: string
+    filetype: "pdf" | "zip"
+    course: { type?: "本科" | "研究生"; name?: string }[]
+    content: ("思维导图" | "题库" | "答案" | "知识点" | "课件")[]
+    filesize?: number
+  }
+}
+
+type TestItem = {
+  type: "test"
+  id: string                 // 文件 MD5；wiki 条目为 "wiki-N"
+  url: string
+  data: {
+    title: string            // 自动拼接：年份+学期+课程+(阶段)+试卷/答案
+    college?: string[]
+    course: { type?: "本科" | "研究生"; name: string }
+    time: {
+      start: string
+      end: string
+      semester?: "First" | "Second"
+      stage?: "期中" | "期末"
+    }
+    content: ("原题" | "答案")[]
+    filetype: "pdf" | "wiki"
+    filesize?: number        // wiki 条目无此字段
+    wiki?: {                 // 关联 wiki（部分 pdf 试卷有），data 结构同上但 filetype 为 "wiki"
+      url: string
+      data: object
+    }
+  }
+}
 
 ## jmespath（可选）
 JMESPath（https://jmespath.org）是 JSON 查询语言，作用于上一步得到的**结果数组**（每项形如 { type, id, url, data }），可做过滤、字段投影、排序、计数。执行顺序：keyword/type 过滤 → jmespath 求值 → limit 截断；total 为求值后数组长度。
@@ -36,19 +86,22 @@ JMESPath（https://jmespath.org）是 JSON 查询语言，作用于上一步得�
 - 过滤 [?表达式]：对每项求布尔值并保留为真者；比较 == != < <= > >=；逻辑 && || !。
 - 投影 [].field 展开数组取字段；multiselect [].{a: x, b: y} 把每项重组为新对象。
 - 管道 | 把左侧结果作为右侧新输入（如先过滤再切片）。
-- 切片 [0:5]、[:10]、[::-1]；索引 [0]。
+- 切片 [0:5]、[:10]、[::-1]；索引 [0]；@ 表示当前元素。
 - 常用函数：length、contains、starts_with、ends_with、sort_by、max_by/min_by、reverse、keys、to_number。
 
 示例：
-- 只取标题：[].data.title
+- 取每项标题（字符串数组）：[].data.title
 - 每项重组为标题+链接：[].{title: data.title, url: url}
-- 近年教材的书名：[?type=='book' && data.publish_year >= '2020'].data.title
-- 大于 10MB 的文件：[?data.filesize > \`10000000\`]
-- 期末试题的标题/课程/链接：[?type=='test' && data.time.stage=='期末'].{title: data.title, course: data.course.name, url: url}
-- 标题含“高等数学”：[?contains(data.title, '高等数学')]
-- 先过滤再取前 3 个：[?type=='book'] | [0:3]
-- 按出版年倒序：sort_by([?type=='book'], &data.publish_year) | reverse(@)
+- 只保留 book：[?type=='book']
+- 过滤后再投影书名：[?type=='book'].data.title
+- 字符串比较（publish_year 是字符串）：[?data.publish_year >= '2020']
+- 数字比较（> 10MB，数字用反引号）：[?data.filesize > \`10000000\`]
+- 逻辑与（期末试题）：[?type=='test' && data.time.stage=='期末']
+- 函数：标题含子串：[?contains(data.title, '高等数学')]
+- 切片 / 反转：[0:5]、[:10]、[::-1]
 - 计数：length([?type=='book'])
+- 先过滤再取前 3 个：[?type=='book'] | [0:3]
+- 按出版年排序后倒序：sort_by([?type=='book'], &data.publish_year) | reverse(@)
 
 非法表达式会以 isError 返回。若只想要下载链接，直接读每项的 url 字段即可（已含统计参数）。`;
 
