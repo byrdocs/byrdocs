@@ -1,5 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { getSignedCookie, setSignedCookie } from 'hono/cookie'
+import { verify } from 'hono/jwt'
 
 import { Counter } from './objects/counter';
 export { Counter } from './objects/counter';
@@ -95,11 +96,23 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const token = c.req.header("X-Byrdocs-Token")
             const ip = c.req.header("CF-Connecting-IP")
             const cookie = await getSignedCookie(c, c.env.JWT_SECRET, "login")
+            const bearer = c.req.header("Authorization")?.split("Bearer ")?.[1]
+            let hasDownloadToken = false
+            if (bearer) {
+                try {
+                    const payload = await verify(bearer, c.env.JWT_SECRET, 'HS256')
+                    hasDownloadToken = payload.download === true
+                } catch { /* invalid token, ignore */ }
+            }
             if (
                 (!isBupt(c.req.raw.cf)) &&
                 token !== c.env.BYRDOCS_SITE_TOKEN &&
+                !hasDownloadToken &&
                 (!cookie || isNaN(parseInt(cookie)) || Date.now() - parseInt(cookie) > 2592000 * 1000)
             ) {
+                if (c.req.query("f") === "3") {
+                    return c.json({ error: "未授权，请登录后重试", success: false }, { status: 401 })
+                }
                 const toq = new URL(c.req.url).searchParams
                 if ((c.req.path === "" || c.req.path === '/') && toq.size === 0) return c.redirect("/login")
                 const to = c.req.path + (toq.size > 0 ? "?" + toq.toString() : "")

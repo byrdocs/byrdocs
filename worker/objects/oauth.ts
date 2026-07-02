@@ -125,6 +125,7 @@ export class OAuth extends DurableObject {
         }
         const token = await sign({
             id: `BUPT-${username}`,
+            download: true,
             iat: Math.floor(Date.now() / 1000),
         }, this.env.JWT_SECRET);
         state.login = true;

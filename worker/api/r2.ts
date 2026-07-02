@@ -9,7 +9,6 @@ export default new Hono<{
     Bindings: Cloudflare.Env,
     Variables: {
         id?: string,
-        canDownload: boolean
     }
 }>()
     .use(async (c, next) => {
@@ -24,27 +23,10 @@ export default new Hono<{
                 return c.json({ error: "Token 无效", success: false })
             }
             c.set("id", payload.id)
-            c.set("canDownload", payload.download === true)
         } catch (e) {
             return c.json({ error: "Token 无效", success: false })
         }
         await next()
-    })
-    .get("/files/:path{.*?}", async c => {
-        if (!c.get("canDownload")) {
-            return c.json({ error: "无权访问", success: false }, { status: 403 })
-        }
-        const path=c.req.param("path")??"";
-        const object=await c.env.R2.get(path);
-        if(!object){
-            return new Response(`${path} Not Found`,{
-                status:404
-            });
-        }
-        const headers=new Headers();
-        object.writeHttpMetadata(headers);
-        headers.set("etag",object.httpEtag);
-        return new Response(object.body,{headers});
     })
     .post("/mpu-start", zValidator(
         'json',
