@@ -20,7 +20,7 @@ import { EnlargeIcon, ExternalIcon } from "./icons";
 import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
 
-const downloadUrl = (id: string, filetype: string) => `${BYRDOCS_SITE_URL}/files/${id}.${filetype}`;
+const downloadUrl = (id: string, filetype: string) => BYRDOCS_SITE_URL ? `${BYRDOCS_SITE_URL}/files/${id}.${filetype}` : `https://byrdocs.org/files/${id}.${filetype}`;
 const url = (_type: string, md5: string, filetype: string) => `/files/${md5}.${filetype}`;
 const preview_url = (md5: string, filename: string) => {
     const base_url = url("preview", md5, "pdf");
