@@ -15,7 +15,7 @@ import {
     DialogTitle
 } from "@/components/ui/dialog"
 import { toast } from "sonner";
-import { EnlargeIcon, ExternalIcon } from "./icons";
+import { ExternalIcon } from "./icons";
 
 import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
@@ -31,26 +31,10 @@ const preview_url = (md5: string, filename: string) => {
 }
 const thumbnail_url = (md5: string) => `/files/${md5}.webp`;
 
-function Preview() {
-    return (
-        <>
-            <Search className="w-3 h-3 @md:w-4 @md:h-4 inline-block text-muted-foreground mb-[3px] mr-1" />
-            <span className="text-muted-foreground font-light @md:text-base text-xs mr-[1px] select-none">预览</span>
-        </>
-    )
-}
-
-function ItemCard({ id, children, onPreview, canPreview }: { id?: string, children: React.ReactNode, onPreview?: () => void, canPreview: boolean }) {
+function ItemCard({ id, children }: { id?: string, children: React.ReactNode }) {
     const [copied, setCopied] = useState(false);
     return (
         <Card className="w-full rounded-none @md:rounded-lg shadow-sm @md:hover:shadow-md transition-shadow overflow-hidden relative group/card">
-            {canPreview && (
-                <div className="@md:opacity-0 group-hover/card:opacity-100 transition-opacity duration-100 absolute z-10 left-0 top-[5px] italic text-muted-foreground bg-muted px-1 rounded-r-md shadow-sm font-mono text-sm @md:text-md">
-                    <button className="inline-block cursor-pointer preview-file" onClick={onPreview}>
-                        <Preview />
-                    </button>
-                </div>
-            )}
             <div className="grid grid-cols-[112.5px_1fr] @md:grid-cols-[150px_1fr] min-h-[150px] @md:min-h-[200px]">
                 {children}
             </div>
@@ -123,8 +107,11 @@ function ItemCover(
                         onClick();
                     }
                 }}>{children}</div> :
-            ({ children, className }: { children: React.ReactNode, className?: string }) =>
-                <a href={onClick} className={cn("block", className)} target="_blank">{children}</a>,
+            typeof onClick === "string" ?
+                ({ children, className }: { children: React.ReactNode, className?: string }) =>
+                    <a href={onClick} className={cn("block", className)} target="_blank">{children}</a> :
+                ({ children, className }: { children: React.ReactNode, className?: string }) =>
+                    <div className={className}>{children}</div>,
         [typeof onClick]
     )
 
@@ -169,7 +156,7 @@ function ItemCover(
                 />
             </div>
             <div className={cn(
-                "absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 transition-opacity duration-100",
+                "absolute inset-0 bg-black bg-opacity-30 flex flex-col gap-1 items-center justify-center opacity-0 transition-opacity duration-100",
                 {
                     "group-hover:opacity-100": !isError && onClick,
                     "cursor-pointer": onClick
@@ -178,7 +165,10 @@ function ItemCover(
                 {
                     external ?
                         <ExternalIcon className="w-6 h-6 text-white" /> :
-                        <EnlargeIcon className="w-6 h-6 text-white" />
+                        <>
+                            <Search className="w-6 h-6 text-white" />
+                            <span className="text-white text-xs @md:text-sm font-medium select-none">预览</span>
+                        </>
                 }
             </div>
         </Container>
@@ -266,6 +256,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
     const downloading = useRef(false);
     const [coverLoading, setCoverLoading] = useState(false);
 
+    // @ts-expect-error 封面放大功能暂时停用
     function openDialog(image: string, preview: string) {
         setDialogImage(image);
         setDialogPreview(preview);
@@ -290,16 +281,14 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                     <ItemCard
                         id={item.id}
                         key={item.id + item.data.filetype}
-                        onPreview={() => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`))}
-                        canPreview={item.data.filetype === "pdf"}
                     >
                         <ItemCover
                             index={index}
                             src={thumbnail_url(item.id)}
                             alt="书籍封面"
-                            onClick={() => {
-                                openDialog(url("cover", item.id, "jpg"), thumbnail_url(item.id));
-                            }}
+                            onClick={item.data.filetype === "pdf" ?
+                                () => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`)) :
+                                undefined}
                         />
                         <div className={cn(
                             "p-2 @md:p-4 space-y-1",
@@ -372,10 +361,6 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                         <ItemCard
                             id={item.data.filetype === 'pdf' ? item.id : undefined}
                             key={item.id + item.data.filetype}
-                            onPreview={() => onPreview(item.data.filetype === 'pdf' ?
-                                preview_url(item.id, `${item.data.title}.${item.data.filetype}`) :
-                                item.url)}
-                            canPreview={true}
                         >
                             <ItemCover
                                 index={index}
@@ -383,9 +368,9 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     item.data.filetype === 'pdf' ? thumbnail_url(item.id) : "/wiki.svg"
                                 }
                                 alt="试卷封面"
-                                onClick={item.data.filetype === 'pdf' ? () => {
-                                    openDialog(url("cover", item.id, "jpg"), thumbnail_url(item.id));
-                                } : item.url}
+                                onClick={item.data.filetype === 'pdf' ?
+                                    () => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`)) :
+                                    item.url}
                                 external={item.data.filetype !== 'pdf'}
                             />
                             <div className={cn(
@@ -451,16 +436,14 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             <ItemCard
                                 id={item.id}
                                 key={item.id + item.data.filetype}
-                                onPreview={() => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`))}
-                                canPreview={item.data.filetype === "pdf"}
                             >
                                 <ItemCover
                                     index={index}
                                     src={ thumbnail_url(item.id)}
                                     alt="资料封面"
-                                    onClick={() => {
-                                        openDialog(url("cover", item.id, "jpg"), thumbnail_url(item.id));
-                                    }}
+                                    onClick={item.data.filetype === "pdf" ?
+                                        () => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`)) :
+                                        undefined}
                                 />
                                 <div className="p-2 @md:p-4 space-y-1 @md:space-y-2">
                                     <div>
