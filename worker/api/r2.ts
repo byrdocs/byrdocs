@@ -245,3 +245,34 @@ export default new Hono<{
             success:true,
         });
     })
+    .delete("/file", zValidator(
+        'query',
+        z.object({
+            key: z.string()
+        })
+    ), async c => {
+        const { key } = c.req.valid("query")
+        const prisma = new PrismaClient({ adapter: new PrismaD1(c.env.DB) })
+        const file = await prisma.file.findFirst({
+            where: {
+                fileName: key,
+                uploader: c.get("id")!,
+            }
+        })
+        if (!file) {
+            return c.json({ error: "文件不存在或无权删除", success: false })
+        }
+        if (file.status === "Published") {
+            return c.json({ error: "已发布的文件不能删除", success: false })
+        }
+        try {
+            await c.env.R2.delete(key)
+            await prisma.file.update({
+                where: { id: file.id },
+                data: { status: "Aborted" }
+            })
+            return c.json({ success: true })
+        } catch (e) {
+            return c.json({ error: (e as Error).message || e?.toString() || "未知错误", success: false })
+        }
+    })
