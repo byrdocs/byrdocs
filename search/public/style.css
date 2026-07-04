@@ -133,6 +133,22 @@ code {
     font-size: 0.8rem;
 }
 
+.endpoint-link {
+    text-decoration: none;
+    color: inherit;
+    display: inline-flex;
+}
+
+.endpoint-link code {
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.endpoint-link:hover code {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
 main {
     max-width: 860px;
     margin: 0 auto;

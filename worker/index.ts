@@ -1,6 +1,5 @@
 import { Hono, type Context } from 'hono';
 import { getSignedCookie, setSignedCookie } from 'hono/cookie'
-import { verify } from 'hono/jwt'
 
 import { Counter } from './objects/counter';
 export { Counter } from './objects/counter';
@@ -8,7 +7,7 @@ export { Counter } from './objects/counter';
 import apiRoute from './api';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaClient } from './generated/prisma/client';
-import { isBupt, isMD5, sign } from './utils';
+import { isBupt, isMD5, sign, canDownload } from './utils';
 import { normalizeCategoryType, renderMd5SsrPage } from './ssr';
 export { OAuth } from './objects/oauth';
 
@@ -96,19 +95,11 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
             const token = c.req.header("X-Byrdocs-Token")
             const ip = c.req.header("CF-Connecting-IP")
             const cookie = await getSignedCookie(c, c.env.JWT_SECRET, "login")
-            const bearer = c.req.header("Authorization")?.split("Bearer ")?.[1]
-            let hasDownloadToken = false
-            if (bearer) {
-                try {
-                    const payload = await verify(bearer, c.env.JWT_SECRET, 'HS256')
-                    hasDownloadToken = payload.download === true
-                } catch { /* invalid token, ignore */ }
-            }
             if (
                 (!isBupt(c.req.raw.cf)) &&
                 token !== c.env.BYRDOCS_SITE_TOKEN &&
-                !hasDownloadToken &&
-                (!cookie || isNaN(parseInt(cookie)) || Date.now() - parseInt(cookie) > 2592000 * 1000)
+                (!cookie || isNaN(parseInt(cookie)) || Date.now() - parseInt(cookie) > 2592000 * 1000) &&
+                !(await canDownload(c.env, c.req.header("Authorization")?.split("Bearer ")?.[1], path))
             ) {
                 if (c.req.query("f") === "3") {
                     return c.json({ error: "未授权，请登录后重试", success: false }, { status: 401 })
