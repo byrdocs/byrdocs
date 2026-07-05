@@ -198,8 +198,7 @@
   }
 }
 
-.download-file:visited {
+.download-file.visited {
   color: hsl(var(--muted-foreground));
-  background-color: hsl(var(--muted));
   text-decoration-color: hsl(var(--muted-foreground));
 }

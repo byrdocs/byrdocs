@@ -149,6 +149,107 @@ code {
     color: var(--accent);
 }
 
+.agent-install {
+    margin: 28px auto 0;
+    max-width: 600px;
+    text-align: left;
+}
+
+.agent-install-title {
+    margin: 0 0 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--fg);
+}
+
+.agent-install-sub {
+    margin: 0 0 10px;
+    font-size: 0.82rem;
+    color: var(--fg-muted);
+}
+
+.agent-install .code {
+    background: var(--bg-elevated);
+    overflow-x: visible;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.copyable {
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.15s;
+}
+
+.copyable:hover {
+    border-color: var(--accent);
+}
+
+.copyable.is-copied::after {
+    content: "已复制";
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.72rem;
+    font-family: var(--sans);
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.client {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 8px 0;
+    background: var(--bg-soft);
+}
+
+.client > summary {
+    cursor: pointer;
+    padding: 11px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.client > summary::-webkit-details-marker {
+    display: none;
+}
+
+.client > summary::before {
+    content: "\25B8";
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+    transition: transform 0.15s;
+}
+
+.client[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.client > summary:hover {
+    color: var(--accent);
+}
+
+.client-body {
+    padding: 0 14px 12px;
+}
+
+.client-body .code {
+    margin: 6px 0 0;
+    background: var(--bg-elevated);
+}
+
+.client-label {
+    font-size: 0.78rem;
+    color: var(--fg-muted);
+    margin: 12px 0 0;
+}
+
 main {
     max-width: 860px;
     margin: 0 auto;

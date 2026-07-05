@@ -1,4 +1,4 @@
-const CANONICAL_HOST = "search-byrdocs.youx.am";
+const CANONICAL_HOST = "search.byrdocs.org";
 if (location.host && location.host !== CANONICAL_HOST) {
     document.querySelectorAll(".host-url").forEach((el) => {
         const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
@@ -164,6 +164,16 @@ toggleJsonBtn.addEventListener("click", () => {
     jsonEl.hidden = !showJson;
     cardsEl.hidden = showJson;
     toggleJsonBtn.textContent = showJson ? "查看卡片" : "查看原始 JSON";
+});
+
+document.querySelectorAll(".copyable").forEach((el) => {
+    el.addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(el.textContent.trim());
+            el.classList.add("is-copied");
+            setTimeout(() => el.classList.remove("is-copied"), 1500);
+        } catch {}
+    });
 });
 
 document.querySelectorAll(".chip").forEach((chip) => {

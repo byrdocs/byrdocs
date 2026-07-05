@@ -24,6 +24,11 @@
                 <a href="#http-api" class="endpoint-link"><code class="host-url">POST https://search.byrdocs.org/api/search</code></a>
                 <a href="#mcp" class="endpoint-link"><code class="host-url">MCP https://search.byrdocs.org/mcp</code></a>
             </div>
+            <div class="agent-install">
+                <p class="agent-install-title">让 AI 一键安装 MCP</p>
+                <p class="agent-install-sub">把下面这句话发给 Agent：</p>
+                <pre class="code host-url copyable" id="agent-prompt-text">阅读 https://search.byrdocs.org/llms.txt 安装 BYR Docs 搜索 MCP</pre>
+            </div>
         </div>
     </header>
 
@@ -101,7 +106,7 @@
                 </tbody>
             </table>
             <h3>示例</h3>
-            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search-byrdocs.youx.am/api/search \
+            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search.byrdocs.org/api/search \
   <span class="tk-t">-H</span> <span class="tk-s">'content-type: application/json'</span> \
   <span class="tk-t">-d</span> <span class="tk-s">'{"keyword":"高等数学","type":"book","limit":5}'</span></pre>
             <h3>响应</h3>
@@ -125,7 +130,7 @@
 
             <h3 id="shorten">短链接</h3>
             <p>设 <code>shorten: true</code> 且请求头带 <code>Authorization: Bearer &lt;token&gt;</code>（<code>token</code> 为 <a href="https://go.byrdocs.org/" target="_blank" rel="noopener">go.byrdocs.org 短链服务</a>的 token），则在搜索、JMESPath、<code>limit</code> 全部完成后，把每个结果的 <code>url</code>（及 test 的 <code>data.wiki.url</code>）并发转换为短链后返回，不返回原始链接。相同链接自动去重；转换前的链接已带 <code>filename</code> / <code>f</code> 统计参数，短链跳转仍计入下载统计；缺少 token 或个别链接转换失败时，该条回退为原始链接，整体仍返回 <code>200</code>。</p>
-            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search-byrdocs.youx.am/api/search \
+            <pre class="code host-url"><span class="tk-k">curl</span> <span class="tk-t">-X</span> POST https://search.byrdocs.org/api/search \
   <span class="tk-t">-H</span> <span class="tk-s">'content-type: application/json'</span> \
   <span class="tk-t">-H</span> <span class="tk-s">'authorization: Bearer &lt;token&gt;'</span> \
   <span class="tk-t">-d</span> <span class="tk-s">'{"keyword":"高等数学","type":"book","shorten":true}'</span></pre>
@@ -172,21 +177,165 @@
 
         <section id="mcp" class="section">
             <h2>MCP</h2>
-            <p>无状态 Streamable HTTP，端点 <code class="host-url">https://search-byrdocs.youx.am/mcp</code>，公开免认证。</p>
-            <h3>Claude Desktop 配置</h3>
-            <pre class="code host-url">{
+            <p>无状态 Streamable HTTP，端点 <code class="host-url">https://search.byrdocs.org/mcp</code>，公开免认证。</p>
+
+            <h3>让 AI 自动安装（推荐）</h3>
+            <p>把下面这句话发给你的 agent：</p>
+            <pre id="mcp-prompt-text" class="code host-url copyable">阅读 https://search.byrdocs.org/llms.txt 安装 BYR Docs 搜索 MCP</pre>
+
+            <h3>手动安装</h3>
+            <p>本服务公开免认证，配置里<strong>无需任何 API key</strong>。端点均为 <code class="host-url">https://search.byrdocs.org/mcp</code>；服务名建议用 <code>byrdocs-search</code>。点开你使用的客户端（代码块点击即可复制）：</p>
+
+            <details class="client">
+                <summary>Claude Code</summary>
+                <div class="client-body">
+                    <pre class="code host-url copyable"><span class="tk-k">claude</span> mcp add <span class="tk-t">--transport</span> http byrdocs-search https://search.byrdocs.org/mcp</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Codex CLI</summary>
+                <div class="client-body">
+                    <p class="client-label">远程（写入 <code>~/.codex/config.toml</code>）</p>
+                    <pre class="code host-url copyable">[<span class="tk-k">mcp_servers.byrdocs-search</span>]
+<span class="tk-k">url</span> = <span class="tk-s">"https://search.byrdocs.org/mcp"</span></pre>
+                    <p class="client-label">或用 CLI（stdio 桥接）</p>
+                    <pre class="code host-url copyable"><span class="tk-k">codex</span> mcp add byrdocs-search <span class="tk-t">--</span> npx <span class="tk-t">-y</span> mcp-remote https://search.byrdocs.org/mcp</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Gemini CLI</summary>
+                <div class="client-body">
+                    <p class="client-label">写入 <code>~/.gemini/settings.json</code></p>
+                    <pre class="code host-url copyable">{
   <span class="tk-k">"mcpServers"</span>: {
     <span class="tk-k">"byrdocs-search"</span>: {
-      <span class="tk-k">"command"</span>: <span class="tk-s">"npx"</span>,
-      <span class="tk-k">"args"</span>: [<span class="tk-s">"-y"</span>, <span class="tk-s">"mcp-remote"</span>, <span class="tk-s">"https://search-byrdocs.youx.am/mcp"</span>]
+      <span class="tk-k">"httpUrl"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span>,
+      <span class="tk-k">"headers"</span>: { <span class="tk-k">"Accept"</span>: <span class="tk-s">"application/json, text/event-stream"</span> }
     }
   }
 }</pre>
-            <p class="note">支持 Streamable HTTP 的客户端可直接填入端点 URL；其余客户端可用 <code>mcp-remote</code> 桥接。</p>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Cursor</summary>
+                <div class="client-body">
+                    <p class="client-label">写入 <code>~/.cursor/mcp.json</code>（或项目内 <code>.cursor/mcp.json</code>）</p>
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: { <span class="tk-k">"url"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span> }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>VS Code（GitHub Copilot）</summary>
+                <div class="client-body">
+                    <p class="client-label">写入 <code>.vscode/mcp.json</code></p>
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"servers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: { <span class="tk-k">"type"</span>: <span class="tk-s">"http"</span>, <span class="tk-k">"url"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span> }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Windsurf</summary>
+                <div class="client-body">
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: { <span class="tk-k">"serverUrl"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span> }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Cline</summary>
+                <div class="client-body">
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: { <span class="tk-k">"url"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span> }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Roo Code</summary>
+                <div class="client-body">
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: {
+      <span class="tk-k">"type"</span>: <span class="tk-s">"streamable-http"</span>,
+      <span class="tk-k">"url"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span>
+    }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>JetBrains AI Assistant</summary>
+                <div class="client-body">
+                    <p class="client-label"><code>Settings → Tools → AI Assistant → MCP</code>，选 HTTP 标签后粘贴</p>
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: { <span class="tk-k">"url"</span>: <span class="tk-s">"https://search.byrdocs.org/mcp"</span> }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Zed</summary>
+                <div class="client-body">
+                    <p class="client-label">仅支持 stdio，用 mcp-remote 桥接，写入 Zed <code>settings.json</code></p>
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"context_servers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: {
+      <span class="tk-k">"source"</span>: <span class="tk-s">"custom"</span>,
+      <span class="tk-k">"command"</span>: <span class="tk-s">"npx"</span>,
+      <span class="tk-k">"args"</span>: [<span class="tk-s">"-y"</span>, <span class="tk-s">"mcp-remote"</span>, <span class="tk-s">"https://search.byrdocs.org/mcp"</span>]
+    }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <details class="client">
+                <summary>Claude Desktop</summary>
+                <div class="client-body">
+                    <p class="client-label">仅支持 stdio，用 mcp-remote 桥接，编辑 <code>claude_desktop_config.json</code></p>
+                    <pre class="code host-url copyable">{
+  <span class="tk-k">"mcpServers"</span>: {
+    <span class="tk-k">"byrdocs-search"</span>: {
+      <span class="tk-k">"command"</span>: <span class="tk-s">"npx"</span>,
+      <span class="tk-k">"args"</span>: [<span class="tk-s">"-y"</span>, <span class="tk-s">"mcp-remote"</span>, <span class="tk-s">"https://search.byrdocs.org/mcp"</span>]
+    }
+  }
+}</pre>
+                </div>
+            </details>
+
+            <p class="note">未列出的客户端：支持 Streamable HTTP 的直接填端点 URL（字段名各家不同，常见为 <code>url</code> / <code>httpUrl</code> / <code>serverUrl</code>）；仅支持 stdio 的一律用 <code>npx -y mcp-remote &lt;端点&gt;</code> 桥接。</p>
+
+            <h3>装好后试试</h3>
+            <p>连接成功后，可以让 agent 调用 <code>search_files</code> 试几个例子：</p>
+            <ul class="examples-list">
+                <li>「帮我搜 <strong>高等数学</strong> 的教材」 → <code>{ keyword: '高等数学', type: 'book' }</code></li>
+                <li>「找 <strong>数据结构</strong> 的期末试题」 → <code>{ keyword: '数据结构', type: 'test', jmespath: "[?data.time.stage=='期末']" }</code></li>
+                <li>「列出所有 <strong>线性代数</strong> 资料的标题和下载链接」 → <code>jmespath: '[].{title: data.title, url: url}'</code></li>
+            </ul>
+
             <h3>工具 <code>search_files</code></h3>
             <p>参数与 HTTP API 同构：<code>keyword</code> / <code>type</code> / <code>jmespath</code> / <code>limit</code> / <code>shorten</code>，返回 JSON 文本。工具描述中已内嵌 item 结构与 JMESPath 用法，便于模型直接构造查询。<code>jmespath</code> 写法见上方 <a href="#jmespath">JMESPath 查询</a>。</p>
             <p>使用 <code>shorten</code> 需在连接时通过 HTTP 头 <code>Authorization: Bearer &lt;token&gt;</code> 提供 <a href="https://go.byrdocs.org/" target="_blank" rel="noopener">go.byrdocs.org 短链服务</a> token，语义同上方<a href="#shorten">短链接</a>：</p>
-            <pre class="code host-url"><span class="tk-k">npx</span> mcp-remote https://search-byrdocs.youx.am/mcp <span class="tk-t">--header</span> <span class="tk-s">"Authorization: Bearer &lt;token&gt;"</span></pre>
+            <pre class="code host-url"><span class="tk-k">npx</span> mcp-remote https://search.byrdocs.org/mcp <span class="tk-t">--header</span> <span class="tk-s">"Authorization: Bearer &lt;token&gt;"</span></pre>
         </section>
 
         <section id="schema" class="section">

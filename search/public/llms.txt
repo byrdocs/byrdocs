@@ -131,7 +131,122 @@ curl -X POST https://search.byrdocs.org/api/search \
 
 无状态 Streamable HTTP，端点 `https://search.byrdocs.org/mcp`，公开免认证。
 
-### Claude Desktop 配置
+### 给 agent 的安装指引
+
+如果你是一个 AI agent，用户希望你为其安装本 MCP，请按以下步骤操作：
+
+1. **判断用户的客户端**，从下面「安装命令」里选择对应的一条执行；无法判断时，直接询问用户用的是哪个客户端（Claude Code / Codex / Gemini CLI / Cursor / VS Code / Claude Desktop / 其它）。
+2. **执行安装命令**（CLI 客户端）或**写入 JSON 配置**（Cursor / Claude Desktop 等）。端点统一为 `https://search.byrdocs.org/mcp`，服务名建议用 `byrdocs-search`。
+3. **让用户重启 / 重新加载** MCP 客户端，使其连接到 server 并加载 `search_files` 工具。
+4. **主动演示几个搜索示例**，调用 `search_files` 跑一遍并把结果讲给用户听，帮用户建立直觉：
+   - 搜教材：`{ "keyword": "高等数学", "type": "book" }`
+   - 找期末试题：`{ "keyword": "数据结构", "type": "test", "jmespath": "[?data.time.stage=='期末']" }`
+   - 只取标题与链接：`{ "keyword": "线性代数", "jmespath": "[].{title: data.title, url: url}" }`
+   - 按大小排序：`{ "type": "book", "jmespath": "sort_by([], &data.filesize) | reverse(@) | [0:5]" }`
+5. 之后可以引导用户直接用自然语言描述需求（如「帮我找XX课程的答案」），你据此构造 `keyword` / `type` / `jmespath` 调用工具即可。
+
+### 安装命令
+
+本服务公开免认证，配置里**无需任何 API key**。端点统一 `https://search.byrdocs.org/mcp`，服务名建议 `byrdocs-search`。按用户的客户端选一条：
+
+**Claude Code**（CLI）：
+
+```bash
+claude mcp add --transport http byrdocs-search https://search.byrdocs.org/mcp
+```
+
+**Codex CLI**：远程写入 `~/.codex/config.toml`：
+
+```toml
+[mcp_servers.byrdocs-search]
+url = "https://search.byrdocs.org/mcp"
+```
+
+或用 CLI 走 stdio 桥接：`codex mcp add byrdocs-search -- npx -y mcp-remote https://search.byrdocs.org/mcp`
+
+**Gemini CLI**：写入 `~/.gemini/settings.json`（注意 `httpUrl` 字段与 `Accept` 头）：
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": {
+      "httpUrl": "https://search.byrdocs.org/mcp",
+      "headers": { "Accept": "application/json, text/event-stream" }
+    }
+  }
+}
+```
+
+**Cursor**：写入 `~/.cursor/mcp.json`（或项目内 `.cursor/mcp.json`）：
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": { "url": "https://search.byrdocs.org/mcp" }
+  }
+}
+```
+
+**VS Code**（GitHub Copilot）：写入 `.vscode/mcp.json`（注意顶层是 `servers`）：
+
+```json
+{
+  "servers": {
+    "byrdocs-search": { "type": "http", "url": "https://search.byrdocs.org/mcp" }
+  }
+}
+```
+
+**Windsurf**（字段名为 `serverUrl`）：
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": { "serverUrl": "https://search.byrdocs.org/mcp" }
+  }
+}
+```
+
+**Cline**：
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": { "url": "https://search.byrdocs.org/mcp" }
+  }
+}
+```
+
+**Roo Code**（`type` 为 `streamable-http`）：
+
+```json
+{
+  "mcpServers": {
+    "byrdocs-search": {
+      "type": "streamable-http",
+      "url": "https://search.byrdocs.org/mcp"
+    }
+  }
+}
+```
+
+**JetBrains AI Assistant**：`Settings → Tools → AI Assistant → MCP`，选 HTTP 标签粘贴 `{ "mcpServers": { "byrdocs-search": { "url": "https://search.byrdocs.org/mcp" } } }`。
+
+**Zed**（仅 stdio，用 `mcp-remote` 桥接，写入 Zed `settings.json`）：
+
+```json
+{
+  "context_servers": {
+    "byrdocs-search": {
+      "source": "custom",
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://search.byrdocs.org/mcp"]
+    }
+  }
+}
+```
+
+**Claude Desktop**（仅 stdio，用 `mcp-remote` 桥接，编辑 `claude_desktop_config.json`）：
 
 ```json
 {
@@ -144,7 +259,7 @@ curl -X POST https://search.byrdocs.org/api/search \
 }
 ```
 
-支持 Streamable HTTP 的客户端可直接填入端点 URL；其余客户端可用 `mcp-remote` 桥接。
+未列出的客户端：支持 Streamable HTTP 的直接填端点 URL（字段名各家不同，常见 `url` / `httpUrl` / `serverUrl`）；仅支持 stdio 的一律用 `npx -y mcp-remote https://search.byrdocs.org/mcp` 桥接。
 
 ### 工具 `search_files`
 

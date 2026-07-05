@@ -5,7 +5,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Item, Test } from "@/types";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Copy, CopyCheck, Edit, Search } from "lucide-react";
 
@@ -21,6 +21,82 @@ import 'core-js/modules/esnext.set.difference';
 import { Link } from "react-router-dom";
 
 const downloadUrl = (id: string, filetype: string) => BYRDOCS_SITE_URL ? `${BYRDOCS_SITE_URL}/files/${id}.${filetype}` : `https://byrdocs.org/files/${id}.${filetype}`;
+
+const VISITED_STORAGE_KEY = "downloaded-files";
+
+let visitedCache: Set<string> | null = null;
+const visitedListeners = new Set<() => void>();
+
+function getVisitedSet(): Set<string> {
+    if (visitedCache === null) {
+        try {
+            visitedCache = new Set(JSON.parse(localStorage.getItem(VISITED_STORAGE_KEY) || "[]"));
+        } catch {
+            visitedCache = new Set();
+        }
+    }
+    return visitedCache;
+}
+
+function markVisited(key: string) {
+    const visited = getVisitedSet();
+    if (visited.has(key)) return;
+    visited.add(key);
+    localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...visited]));
+    visitedListeners.forEach(listener => listener());
+}
+
+function useVisited(key: string): boolean {
+    return useSyncExternalStore(
+        listener => {
+            visitedListeners.add(listener);
+            return () => visitedListeners.delete(listener);
+        },
+        () => getVisitedSet().has(key),
+        () => false,
+    );
+}
+
+const downloadBase = BYRDOCS_SITE_URL ? BYRDOCS_SITE_URL : "https://byrdocs.org";
+const visitedKeyForPath = (path: string) => new URL("/files/" + path, downloadBase).toString();
+
+function syncVisitedFromCookie() {
+    const match = document.cookie.match(/(?:^|;\s*)dl=([^;]*)/);
+    if (!match) return;
+    let paths: string[] = [];
+    try {
+        paths = decodeURIComponent(match[1]).split(",").filter(Boolean);
+    } catch {
+        paths = [];
+    }
+    document.cookie = "dl=; Path=/; Max-Age=0; SameSite=Lax";
+    if (paths.length === 0) return;
+    const visited = getVisitedSet();
+    let changed = false;
+    for (const path of paths) {
+        const key = visitedKeyForPath(path);
+        if (!visited.has(key)) {
+            visited.add(key);
+            changed = true;
+        }
+    }
+    if (changed) {
+        localStorage.setItem(VISITED_STORAGE_KEY, JSON.stringify([...visited]));
+        visitedListeners.forEach(listener => listener());
+    }
+}
+
+if (typeof window !== "undefined") {
+    syncVisitedFromCookie();
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") syncVisitedFromCookie();
+    });
+    window.addEventListener("focus", syncVisitedFromCookie);
+    const cookieStore = (window as unknown as { cookieStore?: { addEventListener?: (t: string, cb: (e: { changed?: { name: string }[] }) => void) => void } }).cookieStore;
+    cookieStore?.addEventListener?.("change", e => {
+        if (e.changed?.some(c => c.name === "dl")) syncVisitedFromCookie();
+    });
+}
 const url = (_type: string, md5: string, filetype: string) => `/files/${md5}.${filetype}`;
 const preview_url = (md5: string, filename: string) => {
     const base_url = url("preview", md5, "pdf");
@@ -182,12 +258,16 @@ function ItemTitle({ children, filename, href, external }: { children: React.Rea
         url.searchParams.set("filename", filename)
         url.searchParams.set("f", "1")
     }
+    const visitedKey = url.origin + url.pathname
+    const visited = useVisited(visitedKey)
     return (
         <h3 className="@md:text-2xl font-bold mb-1">
             <a
-                className="underline-offset-2 hover:underline cursor-pointer download-file"
+                className={cn("underline-offset-2 hover:underline cursor-pointer download-file", { visited })}
                 href={url.toString()}
                 target="_blank"
+                onClick={() => markVisited(visitedKey)}
+                onAuxClick={e => { if (e.button === 1) markVisited(visitedKey); }}
             >
                 {children} {external && <ExternalIcon className="w-3 h-3 @md:w-4 @md:h-4 inline-block" />}
             </a>

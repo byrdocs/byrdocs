@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono';
-import { getSignedCookie, setSignedCookie } from 'hono/cookie'
+import { getCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
 
 import { Counter } from './objects/counter';
 export { Counter } from './objects/counter';
@@ -151,6 +151,11 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
         if (filename && res.status === 200) {
             const headers = new Headers(res.headers)
             headers.set("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`)
+            if (c.req.query("f") === "1") {
+                const existing = (getCookie(c, "dl") || "").split(",").filter(Boolean)
+                const updated = [...new Set([...existing, path])].slice(-20)
+                headers.append("Set-Cookie", `dl=${encodeURIComponent(updated.join(","))}; Path=/; Max-Age=34560000; SameSite=Lax`)
+            }
             res = new Response(res.body, {
                 status: res.status,
                 statusText: res.statusText,
