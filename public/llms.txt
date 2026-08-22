@@ -1,0 +1,48 @@
+# BYR Docs
+
+> BYR Docs (https://byrdocs.org) is an open-source document sharing platform that helps students of Beijing University of Posts and Telecommunications (BUPT) find course-related study resources: textbooks (`book`), past exam papers (`test`), and study materials such as slides, notes and question banks (`doc`). It also includes community-maintained wiki exams at https://wiki.byrdocs.org.
+
+Key facts for LLMs and agents:
+
+- Searching and reading metadata is public and requires no login. Downloading actual files from `https://byrdocs.org/files/<md5>.<pdf|zip>` requires either access from the BUPT campus network or logging in via BUPT unified authentication (or a BYR Docs CLI token).
+- Every file is identified by its MD5 hash. Metadata for all files is maintained as YAML in the byrdocs-archive repository and published as JSON.
+- There are three resource types: `book` (textbooks, PDF), `test` (exam papers, PDF or wiki), and `doc` (study materials, PDF or ZIP).
+- The recommended programmatic entry points are the search API and MCP server at https://search.byrdocs.org — do not scrape the SPA frontend.
+
+## Search API and MCP
+
+- [Search service docs (llms.txt)](https://search.byrdocs.org/llms.txt): Full documentation of the search HTTP API and MCP server, including request/response schemas, JMESPath usage and per-client MCP install instructions.
+- [HTTP API](https://search.byrdocs.org/api/search): `POST` JSON `{ keyword?, type?, jmespath?, limit?, shorten? }`; keyword search supports plain terms (Chinese tokenization), 13-digit ISBNs and 32-char MD5s. Open CORS, no authentication.
+- [MCP server](https://search.byrdocs.org/mcp): Stateless Streamable HTTP MCP endpoint exposing a `search_files` tool. No API key required.
+
+## Agent Skills and CLI
+
+- [BYR Docs Skills](https://github.com/byrdocs/byrdocs-cli-envolved): Agent Skills for using and contributing to BYR Docs (search, download, upload, metadata authoring, wiki exam editing, GitHub PR workflow). Install with `npx skills add byrdocs/byrdocs-cli-envolved`.
+- [How to use the Skills (blog, Chinese)](https://blog.byrdocs.org/blog/posts/how-to-use-skills/post): Walkthrough of installing the Skills and letting an agent search, download and contribute documents end to end.
+- [BYR Docs CLI](https://github.com/byrdocs/byrdocs-cli): Command-line tool for logging in to the main site and uploading/downloading files; used by the Skills for authenticated operations.
+
+## Data
+
+- [metadata.json](https://byrdocs.org/data/metadata.json): Machine-readable metadata of all books, tests and docs (title, authors, ISBN, course, exam time/stage, file type/size, etc.).
+- [wiki.json](https://byrdocs.org/data/wiki.json): Index of community-maintained wiki exam entries.
+- [Sitemap](https://byrdocs.org/sitemap.xml): Sitemap of the main site.
+
+## Contributing
+
+- [Contributing guide](https://github.com/byrdocs/byrdocs-archive/blob/master/CONTRIBUTING.md): Rules for contributing files and metadata to the main site (file requirements, YAML metadata format, review process).
+- [byrdocs-archive](https://github.com/byrdocs/byrdocs-archive): Source of truth for all file metadata; contributions are made via pull requests to this repository.
+- [byrdocs-publish](https://publish.byrdocs.org): Web tool for generating and managing YAML metadata files.
+- [Wiki exams (Neowiki)](https://github.com/byrdocs/byrdocs-neowiki): Repository of community-transcribed exam questions and answers rendered at https://wiki.byrdocs.org.
+
+## Community and source
+
+- [Main site source code](https://github.com/byrdocs/byrdocs): This website (React SPA + Cloudflare Workers).
+- [GitHub organization](https://github.com/byrdocs): All BYR Docs projects.
+- [GitHub Discussions](https://github.com/orgs/byrdocs/discussions): Questions, feedback and coordination.
+
+## Notes for agents
+
+- Prefer the search API/MCP over crawling; results already include ready-to-use download URLs with statistics parameters attached.
+- Respect authentication: if a file download returns a login redirect or 401, ask the user to log in (BUPT unified authentication via https://byrdocs.org/login, or `byrdocs login` with the CLI) instead of attempting to bypass it.
+- Sensitive actions (installing dependencies, uploading files, creating forks, pushing commits, opening PRs) should always be confirmed with the user, as described in the Skills.
+- Content is primarily in Chinese; course names and exam titles are Chinese strings (e.g. 高等数学, 期末).
