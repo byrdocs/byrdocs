@@ -9,6 +9,13 @@ Key facts for LLMs and agents:
 - There are three resource types: `book` (textbooks, PDF), `test` (exam papers, PDF or wiki), and `doc` (study materials, PDF or ZIP).
 - The recommended programmatic entry points are the search API and MCP server at https://search.byrdocs.org — do not scrape the SPA frontend.
 
+Notes for agents:
+
+- Prefer the search API/MCP over crawling; results already include ready-to-use download URLs with statistics parameters attached.
+- Respect authentication: if a file download returns a login redirect or 401, ask the user to log in (BUPT unified authentication via https://byrdocs.org/login, or `byrdocs login` with the CLI) instead of attempting to bypass it.
+- Sensitive actions (installing dependencies, uploading files, creating forks, pushing commits, opening PRs) should always be confirmed with the user, as described in the Skills.
+- Content is primarily in Chinese; course names and exam titles are Chinese strings (e.g. 高等数学, 期末).
+
 ## Search API and MCP
 
 - [Search service docs (llms.txt)](https://search.byrdocs.org/llms.txt): Full documentation of the search HTTP API and MCP server, including request/response schemas, JMESPath usage and per-client MCP install instructions.
@@ -39,10 +46,3 @@ Key facts for LLMs and agents:
 - [Main site source code](https://github.com/byrdocs/byrdocs): This website (React SPA + Cloudflare Workers).
 - [GitHub organization](https://github.com/byrdocs): All BYR Docs projects.
 - [GitHub Discussions](https://github.com/orgs/byrdocs/discussions): Questions, feedback and coordination.
-
-## Notes for agents
-
-- Prefer the search API/MCP over crawling; results already include ready-to-use download URLs with statistics parameters attached.
-- Respect authentication: if a file download returns a login redirect or 401, ask the user to log in (BUPT unified authentication via https://byrdocs.org/login, or `byrdocs login` with the CLI) instead of attempting to bypass it.
-- Sensitive actions (installing dependencies, uploading files, creating forks, pushing commits, opening PRs) should always be confirmed with the user, as described in the Skills.
-- Content is primarily in Chinese; course names and exam titles are Chinese strings (e.g. 高等数学, 期末).
