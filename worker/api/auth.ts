@@ -88,7 +88,7 @@ export default new Hono<{
     })), async c => {
         const { username, password, uuid } = c.req.valid("json")
         try {
-            await login(username, password, { ocr: { token: c.env.OCR_TOKEN } })
+            await login(username, password, { ocr: { token: c.env.OCR_TOKEN }, cas: true })
             return afterLogin(c, await c.get('auth').loginBUPT(username, uuid))
         } catch (e) {
             return c.json({ error: (e as Error).message || e?.toString() || "未知错误", success: false })

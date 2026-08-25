@@ -50,7 +50,7 @@ export default new Hono<{
             const { studentId, password } = c.req.valid('json');
 
             try {
-                if (await login(studentId, password, { ocr: { token: c.env.OCR_TOKEN } })) {
+                if (await login(studentId, password, { ocr: { token: c.env.OCR_TOKEN }, cas: true })) {
                     await setCookie(c);
                     return c.json({ success: true, message: '登录成功' });
                 }
