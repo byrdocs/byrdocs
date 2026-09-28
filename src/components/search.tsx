@@ -63,7 +63,15 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
     const [metadataTotal, setMetadataTotal] = useState(0)
     const [wasmReceived, setWasmReceived] = useState(0)
     const [wasmTotal, setWasmTotal] = useState(0)
+    // The search box is uncontrolled on purpose: a React render must never write
+    // into it while an IME composition is live. A late (or merely long) commit used
+    // to write a stale controlled `value` back into the input, which turned the
+    // preedit text into literal text so the next candidate got appended after it
+    // (e.g. "shuxue数学"). `keyword` keeps its original semantics; the only writer
+    // left is `setInputDomValue`.
     const [keyword, setKeyword] = useState(q)
+    const initialQuery = useRef(q)
+    const composing = useRef(false)
     const [debouncedKeyword, debouncing] = useDebounce(keyword, DEBOUNCE_TIME)
     const [miniSearching, setMiniSearching] = useState(false);
     const [wasmLoading, setWasmLoading] = useState(!isWasmReady());
@@ -94,8 +102,20 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
         }
     }
 
+    // Sync the uncontrolled input from the URL / clear / reset paths. The
+    // `composing` guard matters: writing a value while an IME composition is live
+    // turns the preedit text into literal text and the next candidate gets
+    // appended after it (e.g. "shuxue数学").
+    function setInputDomValue(value: string) {
+        const el = input.current
+        if (el && !composing.current && el.value !== value) {
+            el.value = value
+        }
+    }
+
     function reset() {
         setTop(false)
+        setInputDomValue("")
         setKeyword("")
         setActive("all")
         input.current?.focus()
@@ -104,6 +124,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
     }
 
     useEffect(() => {
+        setInputDomValue(q)
         setKeyword(q)
         setSearching(Boolean(q))
         if (q) {
@@ -342,7 +363,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
                                             }
                                         )}
                                         placeholder="搜索书籍、试卷和资料..."
-                                        value={keyword}
+                                        defaultValue={initialQuery.current}
                                         onInput={e => {
                                             const value = e.currentTarget.value
                                             setKeyword(value)
@@ -351,6 +372,12 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
                                             setSearching(!!value)
                                             setShowClear(!!value)
                                         }}
+                                        onCompositionStart={() => {
+                                            composing.current = true
+                                        }}
+                                        onCompositionEnd={() => {
+                                            composing.current = false
+                                        }}
                                         ref={input}
                                     />
                                     {showClear && (
@@ -358,6 +385,7 @@ export function Search({ onPreview: onLayoutPreview }: { onPreview: (preview: fa
                                             input.current?.focus()
                                             setShowClear(false)
                                             setSearching(false)
+                                            setInputDomValue("")
                                             setKeyword("")
                                             setTop(true)
                                             setQuery(new URLSearchParams())
