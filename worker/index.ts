@@ -116,15 +116,39 @@ const app = new Hono<{ Bindings: Cloudflare.Env }>()
                     const stub: DurableObjectStub<Counter<Cloudflare.Env>> = c.env.COUNTER.get(id);
                     c.executionCtx.waitUntil(stub.add(path))
                 }
+                // `cf` is only loosely typed here, so narrow before logging.
+                const httpProtocol = c.req.raw.cf?.httpProtocol
                 c.env.AE.writeDataPoint({
+                    // Positional: downstream (byrdocs-logs-exporter → Postgres
+                    // `byrdocs.blobN`, `file_view`, the Grafana panels) reads
+                    // these by index. Only ever append — inserting or
+                    // reordering silently shifts the meaning of every later
+                    // column in all stored history.
                     blobs: [
-                        "download_file",
-                        path,
-                        filename || null,
-                        c.req.query("f") || null,
-                        ip || null,
-                        cookie || null,
-                        range || null
+                        "download_file",                          // blob1
+                        path,                                     // blob2
+                        filename || null,                         // blob3
+                        c.req.query("f") || null,                 // blob4  1 download / 2 preview / 3 cli
+                        ip || null,                               // blob5
+                        cookie || null,                           // blob6
+                        range || null,                            // blob7
+                        // Client signals, to explain repeated requests: the
+                        // same device fetching the same file again within a
+                        // few seconds, mostly without a Range header.
+                        c.req.header("User-Agent") || null,       // blob8
+                        c.req.header("X-Requested-With") || null, // blob9  Android WebView host app package
+                        c.req.header("Sec-Fetch-Mode") || null,   // blob10
+                        c.req.header("Sec-Fetch-Dest") || null,   // blob11
+                        c.req.header("Sec-Purpose") || c.req.header("Purpose") || null, // blob12 prefetch / prerender
+                        c.req.header("Accept") || null,           // blob13
+                        typeof httpProtocol === "string" ? httpProtocol : null, // blob14
+                    ],
+                    // Millisecond timestamp. Analytics Engine's own `timestamp`
+                    // only has second resolution, which is too coarse to see
+                    // the 1–2 s gap between a request and its repeat. Must stay
+                    // an integer: the Postgres column was inferred as BIGINT.
+                    doubles: [
+                        Date.now(),                               // double1
                     ],
                     indexes: [
                         Math.random().toString(36).substring(2, 15)
