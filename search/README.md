@@ -15,6 +15,8 @@ BYR Docs 文件搜索服务，一个独立的 Cloudflare Worker，提供三件�
 - `metadata.json`（教材 / 资料 / 试题元数据）
 - `wiki.json`（wiki 试题）
 
+大邮数学集同步试卷的 `data.filetype` 为 `bump`，其余元信息按 PDF 试卷处理；下载地址和 `filename` 参数仍使用 `.pdf`。
+
 一次查询按顺序执行：`keyword` / `type` 过滤 → 可选的 JMESPath 求值 → `limit` 截断。
 
 - **关键词检索**：`MiniSearch` + `jieba-wasm`（`cut_for_search` 中文分词），与主站前端搜索语义对齐。ISBN / MD5 走精确匹配。

@@ -60,7 +60,7 @@ export type Test = {
         name: string,
     },
     time: Time,
-    filetype: 'pdf',
+    filetype: 'pdf' | 'bump',
     content: TestContent[],
     filesize: number,
     wiki?: {
