@@ -3,7 +3,7 @@ import {
 } from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
-import { Item, Test, TestItem } from "@/types";
+import { Item, Test } from "@/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
@@ -325,12 +325,7 @@ function formatFileSize(size: number) {
     }
 }
 
-function isPdfTest(item: Item): item is TestItem {
-    return item.type === "test" && (item.data.filetype === "pdf" || item.data.filetype === "bump");
-}
-
 export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url: string) => void }> = ({ item, index, onPreview }) => {
-    const filetype = item.data.filetype === 'bump' ? 'pdf' : item.data.filetype;
     const downloading = useRef(false);
 
     useEffect(() => {
@@ -428,17 +423,17 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                 item.type == "test" ?
                     (
                         <ItemCard
-                            id={isPdfTest(item) ? item.id : undefined}
+                            id={item.data.filetype === 'pdf' ? item.id : undefined}
                             key={item.id + item.data.filetype}
                         >
                             <ItemCover
                                 index={index}
                                 src={
-                                    isPdfTest(item) ? thumbnail_url(item.id) : "/wiki.svg"
+                                    item.data.filetype === 'pdf' ? thumbnail_url(item.id) : "/wiki.svg"
                                 }
                                 alt="试卷封面"
-                                onClick={isPdfTest(item) ?
-                                    () => onPreview(preview_url(item.id, `${item.data.title}.${filetype}`)) :
+                                onClick={item.data.filetype === 'pdf' ?
+                                    () => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`)) :
                                     item.url}
                                 external={item.data.filetype === 'wiki'}
                             />
@@ -447,8 +442,8 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                             )}>
                                 <div>
                                     <ItemTitle
-                                        filename={`${item.data.title}.${filetype}`}
-                                        href={isPdfTest(item) ? downloadUrl(item.id, filetype) : item.url}
+                                        filename={`${item.data.title}.${item.data.filetype}`}
+                                        href={item.data.filetype === 'pdf' ? downloadUrl(item.id, item.data.filetype) : item.url}
                                         external={item.data.filetype === 'wiki'}
                                     >
                                         {item.data.title}
@@ -458,11 +453,11 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     </p>
                                     <div className="space-x-1 -my-[1px] @md:mt-2">
                                         <ItemBadge color="green">试卷</ItemBadge>
-                                        {isPdfTest(item) && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
+                                        {item.data.filetype === 'pdf' && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
                                         {item.data.filetype === 'pdf' && item.data.wiki && <SourceBadge label="wiki" url={item.data.wiki.url} />}
                                         {item.data.filetype === 'wiki' && <SourceBadge label="wiki" url={item.url} />}
-                                        {item.data.filetype === 'bump' && <SourceBadge label="大邮数学集" color="bump" url="https://pub.fa-555.com" />}
-                                        {isPdfTest(item) && item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
+                                        {item.data.filetype === 'pdf' && item.data.external_source === 'bump' && <SourceBadge label="大邮数学集" color="bump" url="https://pub.fa-555.com" />}
+                                        {item.data.filetype === 'pdf' && item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
                                         {item.data.college ? item.data.college.map(x => <ItemBadge variant="secondary" key={x}>{x}</ItemBadge>) : null}
                                     </div>
                                 </div>
