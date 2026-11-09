@@ -70,7 +70,7 @@ type TestItem = {
       stage?: "期中" | "期末"
     }
     content: ("原题" | "答案")[]
-    filetype: "pdf" | "wiki"
+    filetype: "pdf" | "bump" | "wiki" // bump 为大邮同步试卷，文件仍为 PDF
     filesize?: number        // wiki 条目无此字段
     wiki?: {                 // 关联 wiki（部分 pdf 试卷有），data 结构同上但 filetype 为 "wiki"
       url: string

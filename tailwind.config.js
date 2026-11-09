@@ -27,6 +27,7 @@ export default {
   			'xl': '1280px',
   		},
   		colors: {
+			bump: '#065f46',
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',

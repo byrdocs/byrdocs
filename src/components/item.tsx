@@ -3,17 +3,12 @@ import {
 } from "@/components/ui/card"
 
 import { Badge } from "@/components/ui/badge"
-import { Item, Test } from "@/types";
+import { Item, Test, TestItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Copy, CopyCheck, Edit, Search } from "lucide-react";
 
-import {
-    Dialog,
-    DialogContent,
-    DialogTitle
-} from "@/components/ui/dialog"
 import { toast } from "sonner";
 import { ExternalIcon } from "./icons";
 
@@ -280,7 +275,7 @@ function ItemBadge(
         {
             children: React.ReactNode,
             variant?: "default" | "secondary",
-            color?: "blue" | "orange" | "green" | "yellow" | "sky" | "rose" | "purple",
+            color?: "blue" | "orange" | "green" | "yellow" | "sky" | "rose" | "purple" | "bump",
             className?: string,
             onClick?: () => void
         }
@@ -297,6 +292,7 @@ function ItemBadge(
                 "bg-sky-500 hover:bg-sky-500": color === "sky",
                 "bg-rose-500 hover:bg-rose-500": color === "rose",
                 "bg-purple-500 hover:bg-purple-500": color === "purple",
+                "bg-bump hover:bg-bump": color === "bump",
                 "cursor-pointer": onClick,
             }
         )}
@@ -308,10 +304,10 @@ function ItemBadge(
     );
 }
 
-function WikiBadge({ url }: { url: string }) {
-    return <a href={url} target="_blank">
-        <ItemBadge color="purple" className="cursor-pointer hover:opacity-80 space-x-px">
-            <span className="inline-block">wiki</span>
+function SourceBadge({ url, label, color = "purple" }: { url: string, label: string, color?: "purple" | "bump" }) {
+    return <a href={url} target="_blank" rel="noopener noreferrer">
+        <ItemBadge color={color} className="cursor-pointer hover:opacity-80 space-x-px">
+            <span className="inline-block">{label}</span>
             <ExternalIcon className="w-2 h-2 @md:w-3 @md:h-3 inline-block" />
         </ItemBadge>
     </a>
@@ -329,20 +325,13 @@ function formatFileSize(size: number) {
     }
 }
 
-export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url: string) => void }> = ({ item, index, onPreview }) => {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [dialogImage, setDialogImage] = useState("");
-    const [dialogPreview, setDialogPreview] = useState("");
-    const downloading = useRef(false);
-    const [coverLoading, setCoverLoading] = useState(false);
+function isPdfTest(item: Item): item is TestItem {
+    return item.type === "test" && (item.data.filetype === "pdf" || item.data.filetype === "bump");
+}
 
-    // @ts-expect-error 封面放大功能暂时停用
-    function openDialog(image: string, preview: string) {
-        setDialogImage(image);
-        setDialogPreview(preview);
-        setCoverLoading(true);
-        setIsDialogOpen(true);
-    }
+export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url: string) => void }> = ({ item, index, onPreview }) => {
+    const filetype = item.data.filetype === 'bump' ? 'pdf' : item.data.filetype;
+    const downloading = useRef(false);
 
     useEffect(() => {
         return () => {
@@ -439,28 +428,28 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                 item.type == "test" ?
                     (
                         <ItemCard
-                            id={item.data.filetype === 'pdf' ? item.id : undefined}
+                            id={isPdfTest(item) ? item.id : undefined}
                             key={item.id + item.data.filetype}
                         >
                             <ItemCover
                                 index={index}
                                 src={
-                                    item.data.filetype === 'pdf' ? thumbnail_url(item.id) : "/wiki.svg"
+                                    isPdfTest(item) ? thumbnail_url(item.id) : "/wiki.svg"
                                 }
                                 alt="试卷封面"
-                                onClick={item.data.filetype === 'pdf' ?
-                                    () => onPreview(preview_url(item.id, `${item.data.title}.${item.data.filetype}`)) :
+                                onClick={isPdfTest(item) ?
+                                    () => onPreview(preview_url(item.id, `${item.data.title}.${filetype}`)) :
                                     item.url}
-                                external={item.data.filetype !== 'pdf'}
+                                external={item.data.filetype === 'wiki'}
                             />
                             <div className={cn(
                                 "p-2 @md:p-4 space-y-1 @md:space-y-2",
                             )}>
                                 <div>
                                     <ItemTitle
-                                        filename={`${item.data.title}.${item.data.filetype}`}
-                                        href={item.data.filetype === 'pdf' ? downloadUrl(item.id, item.data.filetype) : item.url}
-                                        external={item.data.filetype!=='pdf'}
+                                        filename={`${item.data.title}.${filetype}`}
+                                        href={isPdfTest(item) ? downloadUrl(item.id, filetype) : item.url}
+                                        external={item.data.filetype === 'wiki'}
                                     >
                                         {item.data.title}
                                     </ItemTitle>
@@ -469,10 +458,11 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                     </p>
                                     <div className="space-x-1 -my-[1px] @md:mt-2">
                                         <ItemBadge color="green">试卷</ItemBadge>
-                                        {item.data.filetype === 'pdf' && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
-                                        {item.data.filetype === 'pdf' && item.data.wiki && <WikiBadge url={item.data.wiki.url} />}
-                                        {item.data.filetype === 'wiki' && <WikiBadge url={item.url} />}
-                                        {item.data.filetype === 'pdf' && item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
+                                        {isPdfTest(item) && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
+                                        {item.data.filetype === 'pdf' && item.data.wiki && <SourceBadge label="wiki" url={item.data.wiki.url} />}
+                                        {item.data.filetype === 'wiki' && <SourceBadge label="wiki" url={item.url} />}
+                                        {item.data.filetype === 'bump' && <SourceBadge label="bump" color="bump" url="https://pub.fa-555.com" />}
+                                        {isPdfTest(item) && item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
                                         {item.data.college ? item.data.college.map(x => <ItemBadge variant="secondary" key={x}>{x}</ItemBadge>) : null}
                                     </div>
                                 </div>
@@ -556,32 +546,6 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                         ) :
                         (<div>Unsupported item type</div>)
             }
-            <Dialog open={isDialogOpen} onOpenChange={(isOpen: boolean) => setIsDialogOpen(isOpen)}>
-                <DialogContent aria-describedby={undefined} className="p-0 [&>button]:hidden flex flex-row items-center justify-center outline-none">
-                    <DialogTitle className="sr-only">文件预览</DialogTitle>
-                    <div className="relative w-full h-full">
-                        <img
-                            src={dialogPreview}
-                            className={cn("object-contain left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:min-h-[80vh] absolute transition-opacity duration-1000", {
-                                "opacity-100": coverLoading,
-                                "opacity-0 ": !coverLoading
-                            })}
-                        >
-                        </img>
-                        <img
-                            src={dialogImage}
-                            className={cn("object-contain left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] sm:min-h-[80vh] absolute transition-opacity duration-200", {
-                                "opacity-0": coverLoading,
-                                "opacity-100": !coverLoading
-                            })}
-                            onLoad={() => {
-                                setCoverLoading(false);
-                            }}
-                        >
-                        </img>
-                    </div>
-                </DialogContent>
-            </Dialog>
         </>
     );
 };
