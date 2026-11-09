@@ -461,7 +461,7 @@ export const ItemDisplay: React.FC<{ item: Item, index?: number, onPreview: (url
                                         {isPdfTest(item) && <ItemBadge color={'yellow'}>pdf</ItemBadge>}
                                         {item.data.filetype === 'pdf' && item.data.wiki && <SourceBadge label="wiki" url={item.data.wiki.url} />}
                                         {item.data.filetype === 'wiki' && <SourceBadge label="wiki" url={item.url} />}
-                                        {item.data.filetype === 'bump' && <SourceBadge label="bump" color="bump" url="https://pub.fa-555.com" />}
+                                        {item.data.filetype === 'bump' && <SourceBadge label="大邮数学集" color="bump" url="https://pub.fa-555.com" />}
                                         {isPdfTest(item) && item.data.filesize ? <ItemBadge color={"rose"}>{formatFileSize(item.data.filesize)}</ItemBadge> : null}
                                         {item.data.college ? item.data.college.map(x => <ItemBadge variant="secondary" key={x}>{x}</ItemBadge>) : null}
                                     </div>
