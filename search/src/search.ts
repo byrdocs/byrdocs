@@ -118,8 +118,7 @@ function normalizeItemUrls(item: Item): Item {
         try {
             const parsed = new URL(url);
             if (parsed.pathname.startsWith("/files/")) {
-                const extension = item.data.filetype === "bump" ? "pdf" : item.data.filetype;
-                parsed.searchParams.set("filename", `${item.data.title}.${extension}`);
+                parsed.searchParams.set("filename", `${item.data.title}.${item.data.filetype}`);
                 parsed.searchParams.set("f", "1");
             }
             url = parsed.toString();

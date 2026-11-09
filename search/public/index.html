@@ -396,7 +396,8 @@
       <span class="tk-k">stage</span>?: <span class="tk-s">"期中"</span> <span class="tk-p">|</span> <span class="tk-s">"期末"</span>
     }
     <span class="tk-k">content</span>: (<span class="tk-s">"原题"</span> <span class="tk-p">|</span> <span class="tk-s">"答案"</span>)[]
-    <span class="tk-k">filetype</span>: <span class="tk-s">"pdf"</span> <span class="tk-p">|</span> <span class="tk-s">"bump"</span> <span class="tk-p">|</span> <span class="tk-s">"wiki"</span> <span class="tk-c">// bump 为大邮同步试卷，文件仍为 PDF</span>
+    <span class="tk-k">filetype</span>: <span class="tk-s">"pdf"</span> <span class="tk-p">|</span> <span class="tk-s">"wiki"</span>
+    <span class="tk-k">external_source</span>?: <span class="tk-s">"bump"</span> <span class="tk-c">// PDF 试卷的外部来源，bump 表示大邮数学集</span>
     <span class="tk-k">filesize</span>?: <span class="tk-t">number</span>      <span class="tk-c">// wiki 条目无此字段</span>
     <span class="tk-k">wiki</span>?: {              <span class="tk-c">// 关联 wiki（部分 pdf 试卷有）</span>
       <span class="tk-k">url</span>: <span class="tk-t">string</span>
